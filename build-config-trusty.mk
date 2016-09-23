@@ -1,6 +1,6 @@
 # Auto-generated - DO NOT EDIT!
 # To regenerate, edit openssl.config, then run:
-#     ./import_openssl.sh import /path/to/openssl-1.0.2h.tar.gz
+#     ./import_openssl.sh import /path/to/openssl-1.0.2i.tar.gz
 #
 openssl_cflags_trusty := \
   -DL_ENDIAN \
@@ -46,7 +46,6 @@ openssl_cflags_trusty := \
   -DOPENSSL_NO_STATIC_ENGINE \
   -DOPENSSL_NO_STORE \
   -DOPENSSL_NO_TLS1 \
-  -DOPENSSL_NO_TLSEXT \
   -DOPENSSL_NO_TS \
   -DOPENSSL_NO_TXT_DB \
   -DOPENSSL_NO_UI \
@@ -98,7 +97,6 @@ openssl_cflags_static_trusty := \
   -DOPENSSL_NO_STATIC_ENGINE \
   -DOPENSSL_NO_STORE \
   -DOPENSSL_NO_TLS1 \
-  -DOPENSSL_NO_TLSEXT \
   -DOPENSSL_NO_TS \
   -DOPENSSL_NO_TXT_DB \
   -DOPENSSL_NO_UI \

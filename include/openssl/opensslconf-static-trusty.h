@@ -134,9 +134,6 @@ extern "C" {
 #ifndef OPENSSL_NO_TLS1
 # define OPENSSL_NO_TLS1
 #endif
-#ifndef OPENSSL_NO_TLSEXT
-# define OPENSSL_NO_TLSEXT
-#endif
 #ifndef OPENSSL_NO_TS
 # define OPENSSL_NO_TS
 #endif
@@ -295,9 +292,6 @@ extern "C" {
 # endif
 # if defined(OPENSSL_NO_TLS1) && !defined(NO_TLS1)
 #  define NO_TLS1
-# endif
-# if defined(OPENSSL_NO_TLSEXT) && !defined(NO_TLSEXT)
-#  define NO_TLSEXT
 # endif
 # if defined(OPENSSL_NO_TS) && !defined(NO_TS)
 #  define NO_TS
