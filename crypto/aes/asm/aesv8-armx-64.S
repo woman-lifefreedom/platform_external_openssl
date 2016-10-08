@@ -2,7 +2,6 @@
 
 #if __ARM_MAX_ARCH__>=7
 .text
-.arch	armv8-a+crypto
 .align	5
 rcon:
 .long	0x01,0x01,0x01,0x01

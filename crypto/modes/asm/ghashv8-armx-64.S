@@ -1,7 +1,6 @@
 #include "arm_arch.h"
 
 .text
-.arch	armv8-a+crypto
 .global	gcm_init_v8
 .type	gcm_init_v8,%function
 .align	4
