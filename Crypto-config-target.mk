@@ -1,6 +1,6 @@
 # Auto-generated - DO NOT EDIT!
 # To regenerate, edit openssl.config, then run:
-#     ./import_openssl.sh import /path/to/openssl-1.0.2j.tar.gz
+#     ./import_openssl.sh import /path/to/openssl-1.0.2k.tar.gz
 #
 # This script will append to the following variables:
 #
@@ -766,7 +766,7 @@ LOCAL_CLANG_ASFLAGS_arm += $(arm_clang_asflags)
 
 LOCAL_SRC_FILES_arm64 += $(filter-out $(arm64_exclude_files),$(common_src_files) $(arm64_src_files))
 LOCAL_CFLAGS_arm64 += $(arm64_cflags) -march=armv8-a+crypto
-LOCAL_CLANG_ASFLAGS_arm64 += $(arm64_clang_asflags) 
+LOCAL_CLANG_ASFLAGS_arm64 += $(arm64_clang_asflags)
 
 LOCAL_SRC_FILES_x86 += $(filter-out $(x86_exclude_files),$(common_src_files) $(x86_src_files))
 LOCAL_CFLAGS_x86 += $(x86_cflags)
