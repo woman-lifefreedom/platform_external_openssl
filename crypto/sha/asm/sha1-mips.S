@@ -15,7 +15,7 @@
 .ent	sha1_block_data_order
 sha1_block_data_order:
 	.frame	$29,16*4,$31
-	.mask	3237937152,-4
+	.mask	0xc0ff0000,-4
 	.set	noreorder
 	sub $29,16*4
 	sw	$31,(16-1)*4($29)

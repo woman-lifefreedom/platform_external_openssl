@@ -154,7 +154,10 @@ function gen_asm_mips () {
 function gen_asm_x86 () {
   local OUT
   OUT=$(default_asm_file "$@")
-  $PERL_EXE "$1" elf -fPIC $(print_values_with_prefix -D $OPENSSL_CRYPTO_DEFINES_x86) > "$OUT"
+  $PERL_EXE "$1" elf -fPIC $(print_values_with_prefix -D $OPENSSL_CRYPTO_DEFINES_x86) "$OUT" 
+  echo "XXXXXXXXXXXXXXXXXXXXXX", $PERL_EXE "$1" elf -fPIC $(print_values_with_prefix -D $OPENSSL_CRYPTO_DEFINES_x86) "$OUT" 
+  #exit 1
+  #> "$OUT"
 }
 
 function gen_asm_x86_64 () {
@@ -195,7 +198,7 @@ function run_verbose() {
 
 function scan_opensslconf_for_flags() {
   for flag in "$@"; do
-    awk "/^#define ${flag}$/ { print \$2 }" crypto/opensslconf.h
+    awk "/^#define ${flag}$/ { print \$2 }" include/openssl/opensslconf.h
   done
 }
 
@@ -206,9 +209,9 @@ DES_PTR
 DES_RISC1
 DES_RISC2
 DES_UNROLL
-RC4_INT
 RC4_CHUNK
 RC4_INDEX
+RC4_INT
 )
 
 function check_asm_flags() {
@@ -222,7 +225,9 @@ function check_asm_flags() {
   chmod +x ./Configure
   PERL=/usr/bin/perl run_verbose ./Configure $CONFIGURE_ARGS $target
 
-  unsorted_flags="$(awk '/^CFLAG=/ { sub(/^CFLAG= .*-Wall /, ""); gsub(/-D/, ""); print; }' Makefile)"
+  make include/openssl/opensslconf.h
+  #unsorted_flags="$(awk '/^CFLAGS=/ { sub(/^CFLAGS=.*-pthread /, ""); gsub(/-D/, ""); print; }' Makefile)"
+  unsorted_flags=$(cat configdata.pm  |grep ' defines => .*" ' | cut -d [ -f2 | cut -d ] -f1 |  sed -e 's/,//g' -e 's/"//g')
   unsorted_flags="$unsorted_flags $(scan_opensslconf_for_flags "${CRYPTO_CONF_FLAGS[@]}")"
 
   expected_flags="$(echo $unsorted_flags | tr ' ' '\n' | sort | tr '\n' ' ')"
@@ -257,9 +262,14 @@ function generate_build_config_headers() {
     PERL=/usr/bin/perl run_verbose ./Configure $CONFIGURE_ARGS ${!configure_args_bits} ${!configure_args_stat}
   fi
 
-  rm -f apps/CA.pl.bak crypto/opensslconf.h.bak
-  mv -f crypto/opensslconf.h crypto/opensslconf-$outname.h
-  cp -f crypto/opensslconf-$outname.h include/openssl/opensslconf-$outname.h
+  make include/openssl/opensslconf.h
+  make crypto/include/internal/bn_conf.h
+  make crypto/include/internal/dso_conf.h
+
+  rm -f apps/CA.pl.bak openssl/opensslconf.h.bak
+  mv -f include/openssl/opensslconf.h include/openssl/opensslconf-$outname.h
+  mv -f crypto/include/internal/bn_conf.h crypto/include/internal/bn_conf-$outname.h
+  #cp -f include/openssl/opensslconf-$outname.h include/openssl/opensslconf-$outname.h
 
   local tmpfile=$(mktemp tmp.XXXXXXXXXX)
   (grep -e -D Makefile | grep -v CONFIGURE_ARGS= | grep -v OPTIONS= | \
@@ -274,7 +284,7 @@ function generate_build_config_headers() {
 # Run Configure and generate makefiles
 function generate_build_config_mk() {
   chmod +x ./Configure
-  for bits in 32 64 trusty; do
+  for bits in 32 64; do
     # Header flags are output in $flags, first static, then dynamic
     generate_build_config_headers $bits 1
     local flags_static=$flags
@@ -295,7 +305,7 @@ function generate_build_config_mk() {
   done
 }
 
-# Generate crypto/opensslconf.h file including arch-specific files
+# Generate openssl/opensslconf.h file including arch-specific files
 function generate_opensslconf_h() {
   echo "Generating opensslconf.h"
   (
@@ -309,7 +319,21 @@ function generate_opensslconf_h() {
   echo "#else"
   echo "#include \"opensslconf-trusty.h\""
   echo "#endif"
-  ) > crypto/opensslconf.h
+  ) > include/openssl/opensslconf.h
+  
+  echo "Generating bn_conf.h"
+  (
+  echo "// Auto-generated - DO NOT EDIT!"
+  echo "#ifndef OPENSSL_SYS_TRUSTY"
+  echo "#if defined(__LP64__)"
+  echo "#include \"bn_conf-64.h\""
+  echo "#else"
+  echo "#include \"bn_conf-32.h\""
+  echo "#endif"
+  echo "#else"
+  echo "#include \"bn_conf-trusty.h\""
+  echo "#endif"
+  ) > crypto/include/internal/bn_conf.h
   # Generate a compatible version for the static library builds
   echo "Generating opensslconf-static.h"
   (
@@ -319,9 +343,9 @@ function generate_opensslconf_h() {
   echo "#else"
   echo "#include \"opensslconf-static-32.h\""
   echo "#endif"
-  ) > crypto/opensslconf-static.h
+  ) > include/openssl/opensslconf.h-static.h
   # move it to output include files as well
-  cp -f crypto/opensslconf-static.h include/openssl/opensslconf-static.h
+  cp -f include/openssl/opensslconf.h-static.h include/openssl/opensslconf-static.h
 }
 
 # Return the value of a computed variable name.
@@ -462,12 +486,13 @@ LOCAL_ADDITIONAL_DEPENDENCIES += \$(LOCAL_PATH)/$(basename $output)
 
     if [ $prefix == "CRYPTO" ]; then
       echo "
-# \"Temporary\" hack until this can be fixed in openssl.config
-x86_64_cflags += -DRC4_INT=\"unsigned int\""
+      # \"Temporary\" hack until this can be fixed in openssl.config
+      #x86_64_cflags += -DRC4_INT=\"unsigned int\""
     fi
 
     if [ $prefix != "APPS" ] ; then
       echo "
+LOCAL_LDLIBS :=  -latomic
 LOCAL_EXPORT_C_INCLUDE_DIRS := \$(LOCAL_PATH)/include"
     fi
 
@@ -546,13 +571,25 @@ function import() {
   gen_asm_arm crypto/sha/asm/sha1-armv4-large.pl
   gen_asm_arm crypto/sha/asm/sha256-armv4.pl
   gen_asm_arm crypto/sha/asm/sha512-armv4.pl
+  gen_asm_arm crypto/ec/asm/ecp_nistz256-armv4.pl
+  gen_asm_arm crypto/poly1305/asm/poly1305-armv4.pl
+  gen_asm_arm crypto/bn/asm/armv4-mont.pl
+  gen_asm_arm crypto/armv4cpuid.pl
+
 
   # Generate armv8 asm
   gen_asm_arm64 crypto/aes/asm/aesv8-armx.pl crypto/aes/asm/aesv8-armx-64.S
   gen_asm_arm64 crypto/modes/asm/ghashv8-armx.pl crypto/modes/asm/ghashv8-armx-64.S
   gen_asm_arm64 crypto/sha/asm/sha1-armv8.pl
+  gen_asm_arm64 crypto/aes/asm/vpaes-armv8.pl 
   gen_asm_arm64 crypto/sha/asm/sha512-armv8.pl crypto/sha/asm/sha256-armv8.S
   gen_asm_arm64 crypto/sha/asm/sha512-armv8.pl
+  gen_asm_arm64 crypto/arm64cpuid.pl
+  gen_asm_arm64 crypto/poly1305/asm/poly1305-armv8.pl
+  gen_asm_arm64 crypto/ec/asm/ecp_nistz256-armv8.pl
+  gen_asm_arm64 crypto/poly1305/asm/poly1305-armv8.pl
+  gen_asm_arm64 crypto/bn/asm/armv8-mont.pl
+
 
   # Generate mips asm
   gen_asm_mips crypto/aes/asm/aes-mips.pl
@@ -582,7 +619,16 @@ function import() {
   gen_asm_x86 crypto/des/asm/des-586.pl
   gen_asm_x86 crypto/des/asm/crypt586.pl
   gen_asm_x86 crypto/bf/asm/bf-586.pl
-
+  gen_asm_x86 crypto/poly1305/asm/poly1305-x86.pl
+  gen_asm_x86 crypto/bn/asm/x86-mont.pl
+  gen_asm_x86 crypto/sha/asm/sha1-586.pl
+  gen_asm_x86 crypto/sha/asm/sha512-586.pl
+  gen_asm_x86 crypto/des/asm/des-586.pl
+  gen_asm_x86 crypto/poly1305/asm/poly1305-x86.pl
+  gen_asm_x86 crypto/bn/asm/x86-gf2m.pl
+  gen_asm_x86 crypto/bf/asm/bf-586.pl
+  gen_asm_x86 crypto/modes/asm/ghash-x86.pl
+  gen_asm_x86 crypto/ec/asm/ecp_nistz256-x86.pl
   # Generate x86_64 asm
   
   gen_asm_x86_64 crypto/x86_64cpuid.pl
@@ -613,7 +659,8 @@ function import() {
   gen_asm_x86_64 crypto/ec/asm/ecp_nistz256-x86_64.pl
   gen_asm_x86_64 crypto/rc4/asm/rc4-x86_64.pl
   gen_asm_x86_64 crypto/rc4/asm/rc4-md5-x86_64.pl
-
+  gen_asm_x86_64 crypto/poly1305/asm/poly1305-x86_64.pl
+  gen_asm_x86_64 crypto/bn/asm/x86_64-mont.pl
   
   # Setup android.testssl directory
   mkdir android.testssl
@@ -635,7 +682,6 @@ function import() {
 
   generate_config_mk Crypto-config-target.mk CRYPTO target
   generate_config_mk Crypto-config-host.mk CRYPTO host
-  generate_config_mk Crypto-config-trusty.mk CRYPTO_TRUSTY target
   generate_config_mk Ssl-config-target.mk SSL target
   generate_config_mk Ssl-config-host.mk SSL host
   generate_config_mk Apps-config-target.mk APPS target

@@ -1,3 +1,10 @@
+@ Copyright 2007-2016 The OpenSSL Project Authors. All Rights Reserved.
+@
+@ Licensed under the OpenSSL license (the "License").  You may not use
+@ this file except in compliance with the License.  You can obtain a copy
+@ in the file LICENSE in the source distribution or at
+@ https://www.openssl.org/source/license.html
+
 
 @ ====================================================================
 @ Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
@@ -38,15 +45,12 @@
 #endif
 
 .text
-#if __ARM_ARCH__<7
-.code	32
-#else
+#if defined(__thumb2__) && !defined(__APPLE__)
 .syntax	unified
-# ifdef __thumb2__
 .thumb
-# else
+#else
 .code	32
-# endif
+#undef __thumb2__
 #endif
 
 .type	AES_Te,%object
@@ -161,15 +165,19 @@ AES_Te:
 .type   AES_encrypt,%function
 .align	5
 AES_encrypt:
-#if __ARM_ARCH__<7
+#ifndef	__thumb2__
 	sub	r3,pc,#8		@ AES_encrypt
 #else
 	adr	r3,AES_encrypt
 #endif
 	stmdb   sp!,{r1,r4-r12,lr}
+#ifdef	__APPLE__
+	adr	r10,AES_Te
+#else
+	sub	r10,r3,#AES_encrypt-AES_Te	@ Te
+#endif
 	mov	r12,r0		@ inp
 	mov	r11,r2
-	sub	r10,r3,#AES_encrypt-AES_Te	@ Te
 #if __ARM_ARCH__<7
 	ldrb	r0,[r12,#3]	@ load input data in endian-neutral
 	ldrb	r4,[r12,#2]	@ manner...
@@ -402,24 +410,24 @@ _armv4_AES_encrypt:
 	ldr	pc,[sp],#4		@ pop and return
 .size	_armv4_AES_encrypt,.-_armv4_AES_encrypt
 
-.global private_AES_set_encrypt_key
-.type   private_AES_set_encrypt_key,%function
+.global AES_set_encrypt_key
+.type   AES_set_encrypt_key,%function
 .align	5
-private_AES_set_encrypt_key:
+AES_set_encrypt_key:
 _armv4_AES_set_encrypt_key:
-#if __ARM_ARCH__<7
+#ifndef	__thumb2__
 	sub	r3,pc,#8		@ AES_set_encrypt_key
 #else
-	adr	r3,private_AES_set_encrypt_key
+	adr	r3,AES_set_encrypt_key
 #endif
 	teq	r0,#0
-#if __ARM_ARCH__>=7
+#ifdef	__thumb2__
 	itt	eq			@ Thumb2 thing, sanity check in ARM
 #endif
 	moveq	r0,#-1
 	beq	.Labrt
 	teq	r2,#0
-#if __ARM_ARCH__>=7
+#ifdef	__thumb2__
 	itt	eq			@ Thumb2 thing, sanity check in ARM
 #endif
 	moveq	r0,#-1
@@ -430,18 +438,22 @@ _armv4_AES_set_encrypt_key:
 	teq	r1,#192
 	beq	.Lok
 	teq	r1,#256
-#if __ARM_ARCH__>=7
+#ifdef	__thumb2__
 	itt	ne			@ Thumb2 thing, sanity check in ARM
 #endif
 	movne	r0,#-1
 	bne	.Labrt
 
 .Lok:	stmdb   sp!,{r4-r12,lr}
-	sub	r10,r3,#_armv4_AES_set_encrypt_key-AES_Te-1024	@ Te4
-
 	mov	r12,r0		@ inp
 	mov	lr,r1			@ bits
 	mov	r11,r2			@ key
+
+#ifdef	__APPLE__
+	adr	r10,AES_Te+1024				@ Te4
+#else
+	sub	r10,r3,#_armv4_AES_set_encrypt_key-AES_Te-1024	@ Te4
+#endif
 
 #if __ARM_ARCH__<7
 	ldrb	r0,[r12,#3]	@ load input data in endian-neutral
@@ -587,7 +599,7 @@ _armv4_AES_set_encrypt_key:
 	str	r2,[r11,#-16]
 	subs	r12,r12,#1
 	str	r3,[r11,#-12]
-#if __ARM_ARCH__>=7
+#ifdef	__thumb2__
 	itt	eq				@ Thumb2 thing, sanity check in ARM
 #endif
 	subeq	r2,r11,#216
@@ -659,7 +671,7 @@ _armv4_AES_set_encrypt_key:
 	str	r2,[r11,#-24]
 	subs	r12,r12,#1
 	str	r3,[r11,#-20]
-#if __ARM_ARCH__>=7
+#ifdef	__thumb2__
 	itt	eq				@ Thumb2 thing, sanity check in ARM
 #endif
 	subeq	r2,r11,#256
@@ -702,12 +714,12 @@ _armv4_AES_set_encrypt_key:
 	moveq	pc,lr			@ be binary compatible with V4, yet
 	.word	0xe12fff1e			@ interoperable with Thumb ISA:-)
 #endif
-.size	private_AES_set_encrypt_key,.-private_AES_set_encrypt_key
+.size	AES_set_encrypt_key,.-AES_set_encrypt_key
 
-.global private_AES_set_decrypt_key
-.type   private_AES_set_decrypt_key,%function
+.global AES_set_decrypt_key
+.type   AES_set_decrypt_key,%function
 .align	5
-private_AES_set_decrypt_key:
+AES_set_decrypt_key:
 	str	lr,[sp,#-4]!            @ push lr
 	bl	_armv4_AES_set_encrypt_key
 	teq	r0,#0
@@ -717,7 +729,7 @@ private_AES_set_decrypt_key:
 	mov	r0,r2			@ AES_set_encrypt_key preserves r2,
 	mov	r1,r2			@ which is AES_KEY *key
 	b	_armv4_AES_set_enc2dec_key
-.size	private_AES_set_decrypt_key,.-private_AES_set_decrypt_key
+.size	AES_set_decrypt_key,.-AES_set_decrypt_key
 
 @ void AES_set_enc2dec_key(const AES_KEY *inp,AES_KEY *out)
 .global	AES_set_enc2dec_key
@@ -730,7 +742,7 @@ _armv4_AES_set_enc2dec_key:
 	ldr	r12,[r0,#240]
 	mov	r7,r0			@ input
 	add	r8,r0,r12,lsl#4
-	mov	r11,r1			@ ouput
+	mov	r11,r1			@ output
 	add	r10,r1,r12,lsl#4
 	str	r12,[r1,#240]
 
@@ -924,15 +936,19 @@ AES_Td:
 .type   AES_decrypt,%function
 .align	5
 AES_decrypt:
-#if __ARM_ARCH__<7
+#ifndef	__thumb2__
 	sub	r3,pc,#8		@ AES_decrypt
 #else
 	adr	r3,AES_decrypt
 #endif
 	stmdb   sp!,{r1,r4-r12,lr}
+#ifdef	__APPLE__
+	adr	r10,AES_Td
+#else
+	sub	r10,r3,#AES_decrypt-AES_Td	@ Td
+#endif
 	mov	r12,r0		@ inp
 	mov	r11,r2
-	sub	r10,r3,#AES_decrypt-AES_Td		@ Td
 #if __ARM_ARCH__<7
 	ldrb	r0,[r12,#3]	@ load input data in endian-neutral
 	ldrb	r4,[r12,#2]	@ manner...

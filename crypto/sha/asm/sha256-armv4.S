@@ -1,3 +1,10 @@
+@ Copyright 2007-2016 The OpenSSL Project Authors. All Rights Reserved.
+@
+@ Licensed under the OpenSSL license (the "License").  You may not use
+@ this file except in compliance with the License.  You can obtain a copy
+@ in the file LICENSE in the source distribution or at
+@ https://www.openssl.org/source/license.html
+
 
 @ ====================================================================
 @ Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
@@ -44,15 +51,11 @@
 #endif
 
 .text
-#if __ARM_ARCH__<7
-.code	32
-#else
+#if defined(__thumb2__)
 .syntax unified
-# ifdef __thumb2__
 .thumb
-# else
+#else
 .code   32
-# endif
 #endif
 
 .type	K256,%object
@@ -78,21 +81,25 @@ K256:
 .word	0				@ terminator
 #if __ARM_MAX_ARCH__>=7 && !defined(__KERNEL__)
 .LOPENSSL_armcap:
-.word	OPENSSL_armcap_P-sha256_block_data_order
+.word	OPENSSL_armcap_P-.Lsha256_block_data_order
 #endif
 .align	5
 
 .global	sha256_block_data_order
 .type	sha256_block_data_order,%function
 sha256_block_data_order:
-#if __ARM_ARCH__<7
+.Lsha256_block_data_order:
+#if __ARM_ARCH__<7 && !defined(__thumb2__)
 	sub	r3,pc,#8		@ sha256_block_data_order
 #else
-	adr	r3,sha256_block_data_order
+	adr	r3,.Lsha256_block_data_order
 #endif
 #if __ARM_MAX_ARCH__>=7 && !defined(__KERNEL__)
 	ldr	r12,.LOPENSSL_armcap
 	ldr	r12,[r3,r12]		@ OPENSSL_armcap_P
+#ifdef	__APPLE__
+	ldr	r12,[r12]
+#endif
 	tst	r12,#ARMV8_SHA256
 	bne	.LARMv8
 	tst	r12,#ARMV7_NEON
@@ -119,7 +126,9 @@ sha256_block_data_order:
 	eor	r0,r8,r8,ror#5
 	add	r4,r4,r12			@ h+=Maj(a,b,c) from the past
 	eor	r0,r0,r8,ror#19	@ Sigma1(e)
+# ifndef __ARMEB__
 	rev	r2,r2
+# endif
 #else
 	@ ldrb	r2,[r1,#3]			@ 0
 	add	r4,r4,r12			@ h+=Maj(a,b,c) from the past
@@ -175,7 +184,9 @@ sha256_block_data_order:
 	eor	r0,r7,r7,ror#5
 	add	r11,r11,r3			@ h+=Maj(a,b,c) from the past
 	eor	r0,r0,r7,ror#19	@ Sigma1(e)
+# ifndef __ARMEB__
 	rev	r2,r2
+# endif
 #else
 	@ ldrb	r2,[r1,#3]			@ 1
 	add	r11,r11,r3			@ h+=Maj(a,b,c) from the past
@@ -231,7 +242,9 @@ sha256_block_data_order:
 	eor	r0,r6,r6,ror#5
 	add	r10,r10,r12			@ h+=Maj(a,b,c) from the past
 	eor	r0,r0,r6,ror#19	@ Sigma1(e)
+# ifndef __ARMEB__
 	rev	r2,r2
+# endif
 #else
 	@ ldrb	r2,[r1,#3]			@ 2
 	add	r10,r10,r12			@ h+=Maj(a,b,c) from the past
@@ -287,7 +300,9 @@ sha256_block_data_order:
 	eor	r0,r5,r5,ror#5
 	add	r9,r9,r3			@ h+=Maj(a,b,c) from the past
 	eor	r0,r0,r5,ror#19	@ Sigma1(e)
+# ifndef __ARMEB__
 	rev	r2,r2
+# endif
 #else
 	@ ldrb	r2,[r1,#3]			@ 3
 	add	r9,r9,r3			@ h+=Maj(a,b,c) from the past
@@ -343,7 +358,9 @@ sha256_block_data_order:
 	eor	r0,r4,r4,ror#5
 	add	r8,r8,r12			@ h+=Maj(a,b,c) from the past
 	eor	r0,r0,r4,ror#19	@ Sigma1(e)
+# ifndef __ARMEB__
 	rev	r2,r2
+# endif
 #else
 	@ ldrb	r2,[r1,#3]			@ 4
 	add	r8,r8,r12			@ h+=Maj(a,b,c) from the past
@@ -399,7 +416,9 @@ sha256_block_data_order:
 	eor	r0,r11,r11,ror#5
 	add	r7,r7,r3			@ h+=Maj(a,b,c) from the past
 	eor	r0,r0,r11,ror#19	@ Sigma1(e)
+# ifndef __ARMEB__
 	rev	r2,r2
+# endif
 #else
 	@ ldrb	r2,[r1,#3]			@ 5
 	add	r7,r7,r3			@ h+=Maj(a,b,c) from the past
@@ -455,7 +474,9 @@ sha256_block_data_order:
 	eor	r0,r10,r10,ror#5
 	add	r6,r6,r12			@ h+=Maj(a,b,c) from the past
 	eor	r0,r0,r10,ror#19	@ Sigma1(e)
+# ifndef __ARMEB__
 	rev	r2,r2
+# endif
 #else
 	@ ldrb	r2,[r1,#3]			@ 6
 	add	r6,r6,r12			@ h+=Maj(a,b,c) from the past
@@ -511,7 +532,9 @@ sha256_block_data_order:
 	eor	r0,r9,r9,ror#5
 	add	r5,r5,r3			@ h+=Maj(a,b,c) from the past
 	eor	r0,r0,r9,ror#19	@ Sigma1(e)
+# ifndef __ARMEB__
 	rev	r2,r2
+# endif
 #else
 	@ ldrb	r2,[r1,#3]			@ 7
 	add	r5,r5,r3			@ h+=Maj(a,b,c) from the past
@@ -567,7 +590,9 @@ sha256_block_data_order:
 	eor	r0,r8,r8,ror#5
 	add	r4,r4,r12			@ h+=Maj(a,b,c) from the past
 	eor	r0,r0,r8,ror#19	@ Sigma1(e)
+# ifndef __ARMEB__
 	rev	r2,r2
+# endif
 #else
 	@ ldrb	r2,[r1,#3]			@ 8
 	add	r4,r4,r12			@ h+=Maj(a,b,c) from the past
@@ -623,7 +648,9 @@ sha256_block_data_order:
 	eor	r0,r7,r7,ror#5
 	add	r11,r11,r3			@ h+=Maj(a,b,c) from the past
 	eor	r0,r0,r7,ror#19	@ Sigma1(e)
+# ifndef __ARMEB__
 	rev	r2,r2
+# endif
 #else
 	@ ldrb	r2,[r1,#3]			@ 9
 	add	r11,r11,r3			@ h+=Maj(a,b,c) from the past
@@ -679,7 +706,9 @@ sha256_block_data_order:
 	eor	r0,r6,r6,ror#5
 	add	r10,r10,r12			@ h+=Maj(a,b,c) from the past
 	eor	r0,r0,r6,ror#19	@ Sigma1(e)
+# ifndef __ARMEB__
 	rev	r2,r2
+# endif
 #else
 	@ ldrb	r2,[r1,#3]			@ 10
 	add	r10,r10,r12			@ h+=Maj(a,b,c) from the past
@@ -735,7 +764,9 @@ sha256_block_data_order:
 	eor	r0,r5,r5,ror#5
 	add	r9,r9,r3			@ h+=Maj(a,b,c) from the past
 	eor	r0,r0,r5,ror#19	@ Sigma1(e)
+# ifndef __ARMEB__
 	rev	r2,r2
+# endif
 #else
 	@ ldrb	r2,[r1,#3]			@ 11
 	add	r9,r9,r3			@ h+=Maj(a,b,c) from the past
@@ -791,7 +822,9 @@ sha256_block_data_order:
 	eor	r0,r4,r4,ror#5
 	add	r8,r8,r12			@ h+=Maj(a,b,c) from the past
 	eor	r0,r0,r4,ror#19	@ Sigma1(e)
+# ifndef __ARMEB__
 	rev	r2,r2
+# endif
 #else
 	@ ldrb	r2,[r1,#3]			@ 12
 	add	r8,r8,r12			@ h+=Maj(a,b,c) from the past
@@ -847,7 +880,9 @@ sha256_block_data_order:
 	eor	r0,r11,r11,ror#5
 	add	r7,r7,r3			@ h+=Maj(a,b,c) from the past
 	eor	r0,r0,r11,ror#19	@ Sigma1(e)
+# ifndef __ARMEB__
 	rev	r2,r2
+# endif
 #else
 	@ ldrb	r2,[r1,#3]			@ 13
 	add	r7,r7,r3			@ h+=Maj(a,b,c) from the past
@@ -903,7 +938,9 @@ sha256_block_data_order:
 	eor	r0,r10,r10,ror#5
 	add	r6,r6,r12			@ h+=Maj(a,b,c) from the past
 	eor	r0,r0,r10,ror#19	@ Sigma1(e)
+# ifndef __ARMEB__
 	rev	r2,r2
+# endif
 #else
 	@ ldrb	r2,[r1,#3]			@ 14
 	add	r6,r6,r12			@ h+=Maj(a,b,c) from the past
@@ -959,7 +996,9 @@ sha256_block_data_order:
 	eor	r0,r9,r9,ror#5
 	add	r5,r5,r3			@ h+=Maj(a,b,c) from the past
 	eor	r0,r0,r9,ror#19	@ Sigma1(e)
+# ifndef __ARMEB__
 	rev	r2,r2
+# endif
 #else
 	@ ldrb	r2,[r1,#3]			@ 15
 	add	r5,r5,r3			@ h+=Maj(a,b,c) from the past
@@ -1838,7 +1877,8 @@ sha256_block_data_order:
 
 .global	sha256_block_data_order_neon
 .type	sha256_block_data_order_neon,%function
-.align	4
+.align	5
+.skip	16
 sha256_block_data_order_neon:
 .LNEON:
 	stmdb	sp!,{r4-r12,lr}
@@ -2620,7 +2660,7 @@ sha256_block_data_order_neon:
 #endif
 #if __ARM_MAX_ARCH__>=7 && !defined(__KERNEL__)
 
-# ifdef __thumb2__
+# if defined(__thumb2__)
 #  define INST(a,b,c,d)	.byte	c,d|0xc,a,b
 # else
 #  define INST(a,b,c,d)	.byte	a,b,c,d
@@ -2631,14 +2671,11 @@ sha256_block_data_order_neon:
 sha256_block_data_order_armv8:
 .LARMv8:
 	vld1.32	{q0,q1},[r0]
-# ifdef __thumb2__
-	adr	r3,.LARMv8
-	sub	r3,r3,#.LARMv8-K256
-# else
-	adrl	r3,K256
-# endif
+	sub	r3,r3,#256+32
 	add	r2,r1,r2,lsl#6	@ len to point at the end of inp
+	b	.Loop_v8
 
+.align	4
 .Loop_v8:
 	vld1.8		{q8-q9},[r1]!
 	vld1.8		{q10-q11},[r1]!

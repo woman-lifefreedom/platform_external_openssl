@@ -505,7 +505,7 @@ _mips_AES_encrypt:
 .ent	AES_encrypt
 AES_encrypt:
 	.frame	$29,64,$31
-	.mask	3237937152,-4
+	.mask	0xc0ff0000,-4
 	.set	noreorder
 	.cpload	$25
 	sub $29,64
@@ -1047,7 +1047,7 @@ _mips_AES_decrypt:
 .ent	AES_decrypt
 AES_decrypt:
 	.frame	$29,64,$31
-	.mask	3237937152,-4
+	.mask	0xc0ff0000,-4
 	.set	noreorder
 	.cpload	$25
 	sub $29,64
@@ -1351,11 +1351,11 @@ _mips_AES_set_encrypt_key:
 	nop
 .end	_mips_AES_set_encrypt_key
 
-.globl	private_AES_set_encrypt_key
-.ent	private_AES_set_encrypt_key
-private_AES_set_encrypt_key:
+.globl	AES_set_encrypt_key
+.ent	AES_set_encrypt_key
+AES_set_encrypt_key:
 	.frame	$29,32,$31
-	.mask	3221225472,-4
+	.mask	0xc0000000,-4
 	.set	noreorder
 	.cpload	$25
 	sub $29,32
@@ -1372,13 +1372,13 @@ private_AES_set_encrypt_key:
 	lw	$30,32-2*4($29)
 	jr	$31
 	add $29,32
-.end	private_AES_set_encrypt_key
+.end	AES_set_encrypt_key
 .align	5
-.globl	private_AES_set_decrypt_key
-.ent	private_AES_set_decrypt_key
-private_AES_set_decrypt_key:
+.globl	AES_set_decrypt_key
+.ent	AES_set_decrypt_key
+AES_set_decrypt_key:
 	.frame	$29,32,$31
-	.mask	3221225472,-4
+	.mask	0xc0000000,-4
 	.set	noreorder
 	.cpload	$25
 	sub $29,32
@@ -1494,7 +1494,7 @@ private_AES_set_decrypt_key:
 	lw	$30,32-2*4($29)
 	jr	$31
 	add $29,32
-.end	private_AES_set_decrypt_key
+.end	AES_set_decrypt_key
 .rdata
 .align	10
 AES_Te:

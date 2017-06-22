@@ -1,7 +1,12 @@
 #include "arm_arch.h"
 
 .text
+#if defined(__thumb2__)
+.syntax	unified
+.thumb
+#else
 .code	32
+#endif
 .type	mul_1x1_ialu,%function
 .align	5
 mul_1x1_ialu:
@@ -69,11 +74,17 @@ mul_1x1_ialu:
 	eor	r4,r4,r6,lsr#8
 	ldr	r6,[sp,r8]		@ tab[b >> 30      ]
 
+#ifdef	__thumb2__
+	itt	ne
+#endif
 	eorne	r5,r5,r0,lsl#30
 	eorne	r4,r4,r0,lsr#2
 	tst	r1,#1<<31
 	eor	r5,r5,r7,lsl#27
 	eor	r4,r4,r7,lsr#5
+#ifdef	__thumb2__
+	itt	ne
+#endif
 	eorne	r5,r5,r0,lsl#31
 	eorne	r4,r4,r0,lsr#1
 	eor	r5,r5,r6,lsl#30
@@ -86,17 +97,30 @@ mul_1x1_ialu:
 .align	5
 bn_GF2m_mul_2x2:
 #if __ARM_MAX_ARCH__>=7
+	stmdb	sp!,{r10,lr}
 	ldr	r12,.LOPENSSL_armcap
-.Lpic:	ldr	r12,[pc,r12]
-	tst	r12,#1
-	bne	.LNEON
+	adr	r10,.LOPENSSL_armcap
+	ldr	r12,[r12,r10]
+#ifdef	__APPLE__
+	ldr	r12,[r12]
 #endif
+	tst	r12,#ARMV7_NEON
+	itt	ne
+	ldrne	r10,[sp],#8
+	bne	.LNEON
+	stmdb	sp!,{r4-r9}
+#else
 	stmdb	sp!,{r4-r10,lr}
+#endif
 	mov	r10,r0			@ reassign 1st argument
 	mov	r0,r3			@ r0=b1
+	sub	r7,sp,#36
+	mov	r8,sp
+	and	r7,r7,#-32
 	ldr	r3,[sp,#32]		@ load b0
 	mov	r12,#7<<2
-	sub	sp,sp,#32		@ allocate tab[8]
+	mov	sp,r7			@ allocate tab[8]
+	str	r8,[r7,#32]
 
 	bl	mul_1x1_ialu		@ a1·b1
 	str	r5,[r10,#8]
@@ -117,6 +141,7 @@ bn_GF2m_mul_2x2:
 	bl	mul_1x1_ialu		@ (a1+a0)·(b1+b0)
 	ldmia	r10,{r6-r9}
 	eor	r5,r5,r4
+	ldr	sp,[sp,#32]		@ destroy tab[8]
 	eor	r4,r4,r7
 	eor	r5,r5,r6
 	eor	r4,r4,r8
@@ -124,7 +149,6 @@ bn_GF2m_mul_2x2:
 	eor	r4,r4,r9
 	str	r4,[r10,#8]
 	eor	r5,r5,r4
-	add	sp,sp,#32		@ destroy tab[8]
 	str	r5,[r10,#4]
 
 #if __ARM_ARCH__>=5
@@ -142,8 +166,8 @@ bn_GF2m_mul_2x2:
 .align	5
 .LNEON:
 	ldr		r12, [sp]		@ 5th argument
-	vmov.32		d26, r2, r1
-	vmov.32		d27, r12, r3
+	vmov		d26, r2, r1
+	vmov		d27, r12, r3
 	vmov.i64	d28, #0x0000ffffffffffff
 	vmov.i64	d29, #0x00000000ffffffff
 	vmov.i64	d30, #0x000000000000ffff
@@ -193,7 +217,7 @@ bn_GF2m_mul_2x2:
 #if __ARM_MAX_ARCH__>=7
 .align	5
 .LOPENSSL_armcap:
-.word	OPENSSL_armcap_P-(.Lpic+8)
+.word	OPENSSL_armcap_P-.
 #endif
 .asciz	"GF(2^m) Multiplication for ARMv4/NEON, CRYPTOGAMS by <appro@openssl.org>"
 .align	5

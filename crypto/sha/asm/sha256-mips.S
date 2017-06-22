@@ -17,7 +17,7 @@
 .ent	sha256_block_data_order
 sha256_block_data_order:
 	.frame	$29,128,$31
-	.mask	3237937152,-4
+	.mask	0xc0ff0000,-4
 	.set	noreorder
 	.cpload	$25
 	sub $29,128

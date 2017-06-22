@@ -1,6 +1,6 @@
 # Auto-generated - DO NOT EDIT!
 # To regenerate, edit openssl.config, then run:
-#     ./import_openssl.sh import /path/to/openssl-1.0.2l.tar.gz
+#     ./import_openssl.sh import /path/to/openssl-1.1.0f.tar.gz
 #
 # This script will append to the following variables:
 #
@@ -20,51 +20,43 @@ common_cflags :=
 
 common_src_files := \
   ssl/bio_ssl.c \
-  ssl/d1_both.c \
-  ssl/d1_clnt.c \
   ssl/d1_lib.c \
-  ssl/d1_meth.c \
-  ssl/d1_pkt.c \
+  ssl/d1_msg.c \
   ssl/d1_srtp.c \
-  ssl/d1_srvr.c \
-  ssl/kssl.c \
-  ssl/s23_clnt.c \
-  ssl/s23_lib.c \
-  ssl/s23_meth.c \
-  ssl/s23_pkt.c \
-  ssl/s23_srvr.c \
-  ssl/s2_clnt.c \
-  ssl/s2_enc.c \
-  ssl/s2_lib.c \
-  ssl/s2_meth.c \
-  ssl/s2_pkt.c \
-  ssl/s2_srvr.c \
-  ssl/s3_both.c \
+  ssl/methods.c \
+  ssl/pqueue.c \
+  ssl/record/dtls1_bitmap.c \
+  ssl/record/rec_layer_d1.c \
+  ssl/record/rec_layer_s3.c \
+  ssl/record/ssl3_buffer.c \
+  ssl/record/ssl3_record.c \
   ssl/s3_cbc.c \
-  ssl/s3_clnt.c \
   ssl/s3_enc.c \
   ssl/s3_lib.c \
-  ssl/s3_meth.c \
-  ssl/s3_pkt.c \
-  ssl/s3_srvr.c \
-  ssl/ssl_algs.c \
+  ssl/s3_msg.c \
   ssl/ssl_asn1.c \
   ssl/ssl_cert.c \
   ssl/ssl_ciph.c \
+  ssl/ssl_conf.c \
   ssl/ssl_err.c \
-  ssl/ssl_err2.c \
+  ssl/ssl_init.c \
   ssl/ssl_lib.c \
+  ssl/ssl_mcnf.c \
   ssl/ssl_rsa.c \
   ssl/ssl_sess.c \
   ssl/ssl_stat.c \
   ssl/ssl_txt.c \
-  ssl/t1_clnt.c \
+  ssl/ssl_utst.c \
+  ssl/statem/statem.c \
+  ssl/statem/statem_clnt.c \
+  ssl/statem/statem_dtls.c \
+  ssl/statem/statem_lib.c \
+  ssl/statem/statem_srvr.c \
   ssl/t1_enc.c \
   ssl/t1_ext.c \
   ssl/t1_lib.c \
-  ssl/t1_meth.c \
   ssl/t1_reneg.c \
-  ssl/t1_srvr.c \
+  ssl/t1_trce.c \
   ssl/tls_srp.c \
 
 common_c_includes := \
@@ -129,6 +121,7 @@ mips32r6_src_files :=
 mips32r6_exclude_files :=
 
 
+LOCAL_LDLIBS :=  -latomic
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
 
 ifdef ARCH_MIPS_REV6
