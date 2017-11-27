@@ -24,6 +24,7 @@ common_src_files := \
   crypto/aes/aes_cfb.c \
   crypto/aes/aes_core.c \
   crypto/aes/aes_ecb.c \
+  crypto/aes/aes_ige.c \
   crypto/aes/aes_misc.c \
   crypto/aes/aes_ofb.c \
   crypto/aes/aes_wrap.c \
@@ -809,7 +810,7 @@ mips32r6_exclude_files :=
       # "Temporary" hack until this can be fixed in openssl.config
       #x86_64_cflags += -DRC4_INT="unsigned int"
 
-LOCAL_LDLIBS :=  -latomic
+#LOCAL_LDLIBS :=  -latomic
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
 
 ifdef ARCH_MIPS_REV6

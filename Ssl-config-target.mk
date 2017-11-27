@@ -121,7 +121,7 @@ mips32r6_src_files :=
 mips32r6_exclude_files :=
 
 
-LOCAL_LDLIBS :=  -latomic
+#LOCAL_LDLIBS :=  -latomic
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
 
 ifdef ARCH_MIPS_REV6
