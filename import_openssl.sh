@@ -492,7 +492,7 @@ LOCAL_ADDITIONAL_DEPENDENCIES += \$(LOCAL_PATH)/$(basename $output)
 
     if [ $prefix != "APPS" ] ; then
       echo "
-LOCAL_LDLIBS :=  -latomic
+#LOCAL_LDLIBS :=  -latomic
 LOCAL_EXPORT_C_INCLUDE_DIRS := \$(LOCAL_PATH)/include"
     fi
 
