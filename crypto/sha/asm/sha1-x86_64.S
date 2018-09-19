@@ -5,6 +5,7 @@
 .type	sha1_block_data_order,@function
 .align	16
 sha1_block_data_order:
+.cfi_startproc	
 	movl	OPENSSL_ia32cap_P+0(%rip),%r9d
 	movl	OPENSSL_ia32cap_P+4(%rip),%r8d
 	movl	OPENSSL_ia32cap_P+8(%rip),%r10d
@@ -17,17 +18,24 @@ sha1_block_data_order:
 .align	16
 .Lialu:
 	movq	%rsp,%rax
+.cfi_def_cfa_register	%rax
 	pushq	%rbx
+.cfi_offset	%rbx,-16
 	pushq	%rbp
+.cfi_offset	%rbp,-24
 	pushq	%r12
+.cfi_offset	%r12,-32
 	pushq	%r13
+.cfi_offset	%r13,-40
 	pushq	%r14
+.cfi_offset	%r14,-48
 	movq	%rdi,%r8
 	subq	$72,%rsp
 	movq	%rsi,%r9
 	andq	$-64,%rsp
 	movq	%rdx,%r10
 	movq	%rax,64(%rsp)
+.cfi_escape	0x0f,0x06,0x77,0xc0,0x00,0x06,0x23,0x08
 .Lprologue:
 
 	movl	0(%r8),%esi
@@ -1222,19 +1230,28 @@ sha1_block_data_order:
 	jnz	.Lloop
 
 	movq	64(%rsp),%rsi
+.cfi_def_cfa	%rsi,8
 	movq	-40(%rsi),%r14
+.cfi_restore	%r14
 	movq	-32(%rsi),%r13
+.cfi_restore	%r13
 	movq	-24(%rsi),%r12
+.cfi_restore	%r12
 	movq	-16(%rsi),%rbp
+.cfi_restore	%rbp
 	movq	-8(%rsi),%rbx
+.cfi_restore	%rbx
 	leaq	(%rsi),%rsp
+.cfi_def_cfa_register	%rsp
 .Lepilogue:
 	.byte	0xf3,0xc3
+.cfi_endproc	
 .size	sha1_block_data_order,.-sha1_block_data_order
 .type	sha1_block_data_order_shaext,@function
 .align	32
 sha1_block_data_order_shaext:
 _shaext_shortcut:
+.cfi_startproc	
 	movdqu	(%rdi),%xmm0
 	movd	16(%rdi),%xmm1
 	movdqa	K_XX_XX+160(%rip),%xmm3
@@ -1396,20 +1413,27 @@ _shaext_shortcut:
 	pshufd	$27,%xmm1,%xmm1
 	movdqu	%xmm0,(%rdi)
 	movd	%xmm1,16(%rdi)
+.cfi_endproc	
 	.byte	0xf3,0xc3
 .size	sha1_block_data_order_shaext,.-sha1_block_data_order_shaext
 .type	sha1_block_data_order_ssse3,@function
 .align	16
 sha1_block_data_order_ssse3:
 _ssse3_shortcut:
-	movq	%rsp,%rax
+.cfi_startproc	
+	movq	%rsp,%r11
+.cfi_def_cfa_register	%r11
 	pushq	%rbx
+.cfi_offset	%rbx,-16
 	pushq	%rbp
+.cfi_offset	%rbp,-24
 	pushq	%r12
+.cfi_offset	%r12,-32
 	pushq	%r13
+.cfi_offset	%r13,-40
 	pushq	%r14
+.cfi_offset	%r14,-48
 	leaq	-64(%rsp),%rsp
-	movq	%rax,%r14
 	andq	$-64,%rsp
 	movq	%rdi,%r8
 	movq	%rsi,%r9
@@ -1417,7 +1441,7 @@ _ssse3_shortcut:
 
 	shlq	$6,%r10
 	addq	%r9,%r10
-	leaq	K_XX_XX+64(%rip),%r11
+	leaq	K_XX_XX+64(%rip),%r14
 
 	movl	0(%r8),%eax
 	movl	4(%r8),%ebx
@@ -1429,8 +1453,8 @@ _ssse3_shortcut:
 	xorl	%edx,%edi
 	andl	%edi,%esi
 
-	movdqa	64(%r11),%xmm6
-	movdqa	-64(%r11),%xmm9
+	movdqa	64(%r14),%xmm6
+	movdqa	-64(%r14),%xmm9
 	movdqu	0(%r9),%xmm0
 	movdqu	16(%r9),%xmm1
 	movdqu	32(%r9),%xmm2
@@ -1506,7 +1530,7 @@ _ssse3_shortcut:
 	pslld	$2,%xmm9
 	pxor	%xmm10,%xmm4
 	xorl	%ebp,%edx
-	movdqa	-64(%r11),%xmm10
+	movdqa	-64(%r14),%xmm10
 	roll	$5,%ecx
 	addl	%edi,%ebx
 	andl	%edx,%esi
@@ -1567,7 +1591,7 @@ _ssse3_shortcut:
 	pslld	$2,%xmm10
 	pxor	%xmm8,%xmm5
 	xorl	%eax,%ebp
-	movdqa	-32(%r11),%xmm8
+	movdqa	-32(%r14),%xmm8
 	roll	$5,%edx
 	addl	%edi,%ecx
 	andl	%ebp,%esi
@@ -1628,7 +1652,7 @@ _ssse3_shortcut:
 	pslld	$2,%xmm8
 	pxor	%xmm9,%xmm6
 	xorl	%ebx,%eax
-	movdqa	-32(%r11),%xmm9
+	movdqa	-32(%r14),%xmm9
 	roll	$5,%ebp
 	addl	%edi,%edx
 	andl	%eax,%esi
@@ -1689,7 +1713,7 @@ _ssse3_shortcut:
 	pslld	$2,%xmm9
 	pxor	%xmm10,%xmm7
 	xorl	%ecx,%ebx
-	movdqa	-32(%r11),%xmm10
+	movdqa	-32(%r14),%xmm10
 	roll	$5,%eax
 	addl	%edi,%ebp
 	andl	%ebx,%esi
@@ -1800,7 +1824,7 @@ _ssse3_shortcut:
 	pxor	%xmm3,%xmm2
 	addl	%esi,%eax
 	xorl	%edx,%edi
-	movdqa	0(%r11),%xmm10
+	movdqa	0(%r14),%xmm10
 	rorl	$7,%ecx
 	paddd	%xmm1,%xmm9
 	addl	%ebx,%eax
@@ -2035,7 +2059,7 @@ _ssse3_shortcut:
 	pxor	%xmm0,%xmm7
 	roll	$5,%ebx
 	addl	%esi,%eax
-	movdqa	32(%r11),%xmm9
+	movdqa	32(%r14),%xmm9
 	xorl	%ecx,%edi
 	paddd	%xmm6,%xmm8
 	xorl	%edx,%ecx
@@ -2326,8 +2350,8 @@ _ssse3_shortcut:
 	addl	%edx,%ecx
 	cmpq	%r10,%r9
 	je	.Ldone_ssse3
-	movdqa	64(%r11),%xmm6
-	movdqa	-64(%r11),%xmm9
+	movdqa	64(%r14),%xmm6
+	movdqa	-64(%r14),%xmm9
 	movdqu	0(%r9),%xmm0
 	movdqu	16(%r9),%xmm1
 	movdqu	32(%r9),%xmm2
@@ -2564,15 +2588,21 @@ _ssse3_shortcut:
 	movl	%ecx,8(%r8)
 	movl	%edx,12(%r8)
 	movl	%ebp,16(%r8)
-	leaq	(%r14),%rsi
-	movq	-40(%rsi),%r14
-	movq	-32(%rsi),%r13
-	movq	-24(%rsi),%r12
-	movq	-16(%rsi),%rbp
-	movq	-8(%rsi),%rbx
-	leaq	(%rsi),%rsp
+	movq	-40(%r11),%r14
+.cfi_restore	%r14
+	movq	-32(%r11),%r13
+.cfi_restore	%r13
+	movq	-24(%r11),%r12
+.cfi_restore	%r12
+	movq	-16(%r11),%rbp
+.cfi_restore	%rbp
+	movq	-8(%r11),%rbx
+.cfi_restore	%rbx
+	leaq	(%r11),%rsp
+.cfi_def_cfa_register	%rsp
 .Lepilogue_ssse3:
 	.byte	0xf3,0xc3
+.cfi_endproc	
 .size	sha1_block_data_order_ssse3,.-sha1_block_data_order_ssse3
 .align	64
 K_XX_XX:

@@ -1,10 +1,4 @@
-#ifdef OPENSSL_FIPSCANISTER
-# include <openssl/fipssyms.h>
-#endif
-
-#if defined(__mips_smartmips) && !defined(_MIPS_ARCH_MIPS32R2)
-#define _MIPS_ARCH_MIPS32R2
-#endif
+#include "mips_arch.h"
 
 .text
 .set	noat
@@ -20,7 +14,7 @@ sha256_block_data_order:
 	.mask	0xc0ff0000,-4
 	.set	noreorder
 	.cpload	$25
-	sub $29,128
+	subu $29,128
 	sw	$31,128-1*4($29)
 	sw	$30,128-2*4($29)
 	sw	$23,128-3*4($29)
@@ -44,29 +38,23 @@ sha256_block_data_order:
 	lw	$30,6*4($4)
 	lw	$31,7*4($4)
 
-	add $23,$5		# pointer to the end of input
+	addu $23,$5		# pointer to the end of input
 	sw	$23,16*4($29)
 	b	.Loop
 
 .align	5
 .Loop:
-	lwl	$8,3($5)
-	lwr	$8,0($5)
-	lwl	$9,7($5)
-	lwr	$9,4($5)
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$8,$8		# byte swap(0)
-	rotr	$8,$8,16
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	lw	$8,($5)
 #else
-	srl	$13,$8,24		# byte swap(0)
-	srl	$14,$8,8
-	andi	$15,$8,0xFF00
-	sll	$8,$8,24
-	andi	$14,0xFF00
-	sll	$15,$15,8
-	or	$8,$13
-	or	$14,$15
-	or	$8,$14
+	lwl	$8,0($5)
+	lwr	$8,3($5)
+#endif
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	lw	$9,4($5)
+#else
+	lwl	$9,4($5)
+	lwr	$9,7($5)
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	xor	$15,$25,$30			# 0
@@ -130,21 +118,11 @@ sha256_block_data_order:
 	addu	$31,$14			# +=Maj(a,b,c)
 	addu	$7,$12
 	addu	$31,$12
-	lwl	$10,11($5)
-	lwr	$10,8($5)
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$9,$9		# byte swap(1)
-	rotr	$9,$9,16
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	lw	$10,8($5)
 #else
-	srl	$14,$9,24		# byte swap(1)
-	srl	$15,$9,8
-	andi	$16,$9,0xFF00
-	sll	$9,$9,24
-	andi	$15,0xFF00
-	sll	$16,$16,8
-	or	$9,$14
-	or	$15,$16
-	or	$9,$15
+	lwl	$10,8($5)
+	lwr	$10,11($5)
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	xor	$16,$24,$25			# 1
@@ -208,21 +186,11 @@ sha256_block_data_order:
 	addu	$30,$15			# +=Maj(a,b,c)
 	addu	$3,$13
 	addu	$30,$13
-	lwl	$11,15($5)
-	lwr	$11,12($5)
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$10,$10		# byte swap(2)
-	rotr	$10,$10,16
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	lw	$11,12($5)
 #else
-	srl	$15,$10,24		# byte swap(2)
-	srl	$16,$10,8
-	andi	$17,$10,0xFF00
-	sll	$10,$10,24
-	andi	$16,0xFF00
-	sll	$17,$17,8
-	or	$10,$15
-	or	$16,$17
-	or	$10,$16
+	lwl	$11,12($5)
+	lwr	$11,15($5)
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	xor	$17,$7,$24			# 2
@@ -286,21 +254,11 @@ sha256_block_data_order:
 	addu	$25,$16			# +=Maj(a,b,c)
 	addu	$2,$14
 	addu	$25,$14
-	lwl	$12,19($5)
-	lwr	$12,16($5)
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$11,$11		# byte swap(3)
-	rotr	$11,$11,16
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	lw	$12,16($5)
 #else
-	srl	$16,$11,24		# byte swap(3)
-	srl	$17,$11,8
-	andi	$18,$11,0xFF00
-	sll	$11,$11,24
-	andi	$17,0xFF00
-	sll	$18,$18,8
-	or	$11,$16
-	or	$17,$18
-	or	$11,$17
+	lwl	$12,16($5)
+	lwr	$12,19($5)
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	xor	$18,$3,$7			# 3
@@ -364,21 +322,11 @@ sha256_block_data_order:
 	addu	$24,$17			# +=Maj(a,b,c)
 	addu	$1,$15
 	addu	$24,$15
-	lwl	$13,23($5)
-	lwr	$13,20($5)
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$12,$12		# byte swap(4)
-	rotr	$12,$12,16
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	lw	$13,20($5)
 #else
-	srl	$17,$12,24		# byte swap(4)
-	srl	$18,$12,8
-	andi	$19,$12,0xFF00
-	sll	$12,$12,24
-	andi	$18,0xFF00
-	sll	$19,$19,8
-	or	$12,$17
-	or	$18,$19
-	or	$12,$18
+	lwl	$13,20($5)
+	lwr	$13,23($5)
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	xor	$19,$2,$3			# 4
@@ -442,21 +390,11 @@ sha256_block_data_order:
 	addu	$7,$18			# +=Maj(a,b,c)
 	addu	$31,$16
 	addu	$7,$16
-	lwl	$14,27($5)
-	lwr	$14,24($5)
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$13,$13		# byte swap(5)
-	rotr	$13,$13,16
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	lw	$14,24($5)
 #else
-	srl	$18,$13,24		# byte swap(5)
-	srl	$19,$13,8
-	andi	$20,$13,0xFF00
-	sll	$13,$13,24
-	andi	$19,0xFF00
-	sll	$20,$20,8
-	or	$13,$18
-	or	$19,$20
-	or	$13,$19
+	lwl	$14,24($5)
+	lwr	$14,27($5)
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	xor	$20,$1,$2			# 5
@@ -520,21 +458,11 @@ sha256_block_data_order:
 	addu	$3,$19			# +=Maj(a,b,c)
 	addu	$30,$17
 	addu	$3,$17
-	lwl	$15,31($5)
-	lwr	$15,28($5)
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$14,$14		# byte swap(6)
-	rotr	$14,$14,16
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	lw	$15,28($5)
 #else
-	srl	$19,$14,24		# byte swap(6)
-	srl	$20,$14,8
-	andi	$21,$14,0xFF00
-	sll	$14,$14,24
-	andi	$20,0xFF00
-	sll	$21,$21,8
-	or	$14,$19
-	or	$20,$21
-	or	$14,$20
+	lwl	$15,28($5)
+	lwr	$15,31($5)
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	xor	$21,$31,$1			# 6
@@ -598,21 +526,11 @@ sha256_block_data_order:
 	addu	$2,$20			# +=Maj(a,b,c)
 	addu	$25,$18
 	addu	$2,$18
-	lwl	$16,35($5)
-	lwr	$16,32($5)
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$15,$15		# byte swap(7)
-	rotr	$15,$15,16
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	lw	$16,32($5)
 #else
-	srl	$20,$15,24		# byte swap(7)
-	srl	$21,$15,8
-	andi	$22,$15,0xFF00
-	sll	$15,$15,24
-	andi	$21,0xFF00
-	sll	$22,$22,8
-	or	$15,$20
-	or	$21,$22
-	or	$15,$21
+	lwl	$16,32($5)
+	lwr	$16,35($5)
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	xor	$22,$30,$31			# 7
@@ -676,21 +594,11 @@ sha256_block_data_order:
 	addu	$1,$21			# +=Maj(a,b,c)
 	addu	$24,$19
 	addu	$1,$19
-	lwl	$17,39($5)
-	lwr	$17,36($5)
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$16,$16		# byte swap(8)
-	rotr	$16,$16,16
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	lw	$17,36($5)
 #else
-	srl	$21,$16,24		# byte swap(8)
-	srl	$22,$16,8
-	andi	$23,$16,0xFF00
-	sll	$16,$16,24
-	andi	$22,0xFF00
-	sll	$23,$23,8
-	or	$16,$21
-	or	$22,$23
-	or	$16,$22
+	lwl	$17,36($5)
+	lwr	$17,39($5)
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	xor	$23,$25,$30			# 8
@@ -754,21 +662,11 @@ sha256_block_data_order:
 	addu	$31,$22			# +=Maj(a,b,c)
 	addu	$7,$20
 	addu	$31,$20
-	lwl	$18,43($5)
-	lwr	$18,40($5)
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$17,$17		# byte swap(9)
-	rotr	$17,$17,16
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	lw	$18,40($5)
 #else
-	srl	$22,$17,24		# byte swap(9)
-	srl	$23,$17,8
-	andi	$8,$17,0xFF00
-	sll	$17,$17,24
-	andi	$23,0xFF00
-	sll	$8,$8,8
-	or	$17,$22
-	or	$23,$8
-	or	$17,$23
+	lwl	$18,40($5)
+	lwr	$18,43($5)
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	xor	$8,$24,$25			# 9
@@ -832,21 +730,11 @@ sha256_block_data_order:
 	addu	$30,$23			# +=Maj(a,b,c)
 	addu	$3,$21
 	addu	$30,$21
-	lwl	$19,47($5)
-	lwr	$19,44($5)
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$18,$18		# byte swap(10)
-	rotr	$18,$18,16
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	lw	$19,44($5)
 #else
-	srl	$23,$18,24		# byte swap(10)
-	srl	$8,$18,8
-	andi	$9,$18,0xFF00
-	sll	$18,$18,24
-	andi	$8,0xFF00
-	sll	$9,$9,8
-	or	$18,$23
-	or	$8,$9
-	or	$18,$8
+	lwl	$19,44($5)
+	lwr	$19,47($5)
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	xor	$9,$7,$24			# 10
@@ -910,21 +798,11 @@ sha256_block_data_order:
 	addu	$25,$8			# +=Maj(a,b,c)
 	addu	$2,$22
 	addu	$25,$22
-	lwl	$20,51($5)
-	lwr	$20,48($5)
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$19,$19		# byte swap(11)
-	rotr	$19,$19,16
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	lw	$20,48($5)
 #else
-	srl	$8,$19,24		# byte swap(11)
-	srl	$9,$19,8
-	andi	$10,$19,0xFF00
-	sll	$19,$19,24
-	andi	$9,0xFF00
-	sll	$10,$10,8
-	or	$19,$8
-	or	$9,$10
-	or	$19,$9
+	lwl	$20,48($5)
+	lwr	$20,51($5)
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	xor	$10,$3,$7			# 11
@@ -988,21 +866,11 @@ sha256_block_data_order:
 	addu	$24,$9			# +=Maj(a,b,c)
 	addu	$1,$23
 	addu	$24,$23
-	lwl	$21,55($5)
-	lwr	$21,52($5)
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$20,$20		# byte swap(12)
-	rotr	$20,$20,16
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	lw	$21,52($5)
 #else
-	srl	$9,$20,24		# byte swap(12)
-	srl	$10,$20,8
-	andi	$11,$20,0xFF00
-	sll	$20,$20,24
-	andi	$10,0xFF00
-	sll	$11,$11,8
-	or	$20,$9
-	or	$10,$11
-	or	$20,$10
+	lwl	$21,52($5)
+	lwr	$21,55($5)
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	xor	$11,$2,$3			# 12
@@ -1066,21 +934,11 @@ sha256_block_data_order:
 	addu	$7,$10			# +=Maj(a,b,c)
 	addu	$31,$8
 	addu	$7,$8
-	lwl	$22,59($5)
-	lwr	$22,56($5)
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$21,$21		# byte swap(13)
-	rotr	$21,$21,16
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	lw	$22,56($5)
 #else
-	srl	$10,$21,24		# byte swap(13)
-	srl	$11,$21,8
-	andi	$12,$21,0xFF00
-	sll	$21,$21,24
-	andi	$11,0xFF00
-	sll	$12,$12,8
-	or	$21,$10
-	or	$11,$12
-	or	$21,$11
+	lwl	$22,56($5)
+	lwr	$22,59($5)
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	xor	$12,$1,$2			# 13
@@ -1145,21 +1003,11 @@ sha256_block_data_order:
 	addu	$30,$9
 	addu	$3,$9
 	lw	$8,0($29)	# prefetch from ring buffer
-	lwl	$23,63($5)
-	lwr	$23,60($5)
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$22,$22		# byte swap(14)
-	rotr	$22,$22,16
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	lw	$23,60($5)
 #else
-	srl	$11,$22,24		# byte swap(14)
-	srl	$12,$22,8
-	andi	$13,$22,0xFF00
-	sll	$22,$22,24
-	andi	$12,0xFF00
-	sll	$13,$13,8
-	or	$22,$11
-	or	$12,$13
-	or	$22,$12
+	lwl	$23,60($5)
+	lwr	$23,63($5)
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	xor	$13,$31,$1			# 14
@@ -1224,20 +1072,6 @@ sha256_block_data_order:
 	addu	$25,$10
 	addu	$2,$10
 	lw	$9,4($29)	# prefetch from ring buffer
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$23,$23		# byte swap(15)
-	rotr	$23,$23,16
-#else
-	srl	$12,$23,24		# byte swap(15)
-	srl	$13,$23,8
-	andi	$14,$23,0xFF00
-	sll	$23,$23,24
-	andi	$13,0xFF00
-	sll	$14,$14,8
-	or	$23,$12
-	or	$13,$14
-	or	$23,$13
-#endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	xor	$14,$30,$31			# 15
 	rotr	$12,$25,6
@@ -2908,13 +2742,13 @@ sha256_block_data_order:
 	li	$15,2290
 	.set	noreorder
 	bne	$14,$15,.L16_xx
-	add $6,16*4		# Ktbl+=16
+	addu $6,16*4		# Ktbl+=16
 
 	lw	$23,16*4($29)	# restore pointer to the end of input
 	lw	$8,0*4($4)
 	lw	$9,1*4($4)
 	lw	$10,2*4($4)
-	add $5,16*4
+	addu $5,16*4
 	lw	$11,3*4($4)
 	addu	$1,$8
 	lw	$12,4*4($4)
@@ -2938,7 +2772,7 @@ sha256_block_data_order:
 	sw	$31,7*4($4)
 
 	bne	$5,$23,.Loop
-	sub $6,192	# rewind $6
+	subu $6,192	# rewind $6
 
 	lw	$31,128-1*4($29)
 	lw	$30,128-2*4($29)
@@ -2951,7 +2785,7 @@ sha256_block_data_order:
 	lw	$17,128-9*4($29)
 	lw	$16,128-10*4($29)
 	jr	$31
-	add $29,128
+	addu $29,128
 .end	sha256_block_data_order
 
 .rdata

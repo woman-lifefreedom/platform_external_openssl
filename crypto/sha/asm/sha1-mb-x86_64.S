@@ -6,15 +6,20 @@
 .type	sha1_multi_block,@function
 .align	32
 sha1_multi_block:
+.cfi_startproc	
 	movq	OPENSSL_ia32cap_P+4(%rip),%rcx
 	btq	$61,%rcx
 	jc	_shaext_shortcut
 	movq	%rsp,%rax
+.cfi_def_cfa_register	%rax
 	pushq	%rbx
+.cfi_offset	%rbx,-16
 	pushq	%rbp
+.cfi_offset	%rbx,-24
 	subq	$288,%rsp
 	andq	$-256,%rsp
 	movq	%rax,272(%rsp)
+.cfi_escape	0x0f,0x06,0x77,0x90,0x02,0x06,0x23,0x08
 .Lbody:
 	leaq	K_XX_XX(%rip),%rbp
 	leaq	256(%rsp),%rbx
@@ -2544,19 +2549,28 @@ sha1_multi_block:
 
 .Ldone:
 	movq	272(%rsp),%rax
+.cfi_def_cfa	%rax,8
 	movq	-16(%rax),%rbp
+.cfi_restore	%rbp
 	movq	-8(%rax),%rbx
+.cfi_restore	%rbx
 	leaq	(%rax),%rsp
+.cfi_def_cfa_register	%rsp
 .Lepilogue:
 	.byte	0xf3,0xc3
+.cfi_endproc	
 .size	sha1_multi_block,.-sha1_multi_block
 .type	sha1_multi_block_shaext,@function
 .align	32
 sha1_multi_block_shaext:
+.cfi_startproc	
 _shaext_shortcut:
 	movq	%rsp,%rax
+.cfi_def_cfa_register	%rax
 	pushq	%rbx
+.cfi_offset	%rbx,-16
 	pushq	%rbp
+.cfi_offset	%rbp,-24
 	subq	$288,%rsp
 	shll	$1,%edx
 	andq	$-256,%rsp
@@ -2912,10 +2926,14 @@ _shaext_shortcut:
 .Ldone_shaext:
 
 	movq	-16(%rax),%rbp
+.cfi_restore	%rbp
 	movq	-8(%rax),%rbx
+.cfi_restore	%rbx
 	leaq	(%rax),%rsp
+.cfi_def_cfa_register	%rsp
 .Lepilogue_shaext:
 	.byte	0xf3,0xc3
+.cfi_endproc	
 .size	sha1_multi_block_shaext,.-sha1_multi_block_shaext
 
 .align	256

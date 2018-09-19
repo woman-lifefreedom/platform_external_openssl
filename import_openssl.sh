@@ -155,7 +155,7 @@ function gen_asm_x86 () {
   local OUT
   OUT=$(default_asm_file "$@")
   $PERL_EXE "$1" elf -fPIC $(print_values_with_prefix -D $OPENSSL_CRYPTO_DEFINES_x86) "$OUT" 
-  echo "XXXXXXXXXXXXXXXXXXXXXX", $PERL_EXE "$1" elf -fPIC $(print_values_with_prefix -D $OPENSSL_CRYPTO_DEFINES_x86) "$OUT" 
+
   #exit 1
   #> "$OUT"
 }
@@ -226,8 +226,9 @@ function check_asm_flags() {
   PERL=/usr/bin/perl run_verbose ./Configure $CONFIGURE_ARGS $target
 
   make include/openssl/opensslconf.h
+  make crypto/buildinf.h
   #unsorted_flags="$(awk '/^CFLAGS=/ { sub(/^CFLAGS=.*-pthread /, ""); gsub(/-D/, ""); print; }' Makefile)"
-  unsorted_flags=$(cat configdata.pm  |grep ' defines => .*" ' | cut -d [ -f2 | cut -d ] -f1 |  sed -e 's/,//g' -e 's/"//g')
+  unsorted_flags=$(cat configdata.pm  |grep ' lib_defines => .*" ' | cut -d [ -f2 | cut -d ] -f1 |  sed -e 's/,//g' -e 's/"//g')
   unsorted_flags="$unsorted_flags $(scan_opensslconf_for_flags "${CRYPTO_CONF_FLAGS[@]}")"
 
   expected_flags="$(echo $unsorted_flags | tr ' ' '\n' | sort | tr '\n' ' ')"
@@ -238,6 +239,7 @@ function check_asm_flags() {
     echo "    $actual_flags"
     echo Please update to:
     echo "    $expected_flags"
+    # This does not work reliable with more modern OpenSSL versions anymore
     exit 1
   fi
 }
@@ -575,6 +577,7 @@ function import() {
   gen_asm_arm crypto/poly1305/asm/poly1305-armv4.pl
   gen_asm_arm crypto/bn/asm/armv4-mont.pl
   gen_asm_arm crypto/armv4cpuid.pl
+  gen_asm_arm crypto/sha/asm/keccak1600-armv4.pl
 
 
   # Generate armv8 asm
@@ -589,7 +592,7 @@ function import() {
   gen_asm_arm64 crypto/ec/asm/ecp_nistz256-armv8.pl
   gen_asm_arm64 crypto/poly1305/asm/poly1305-armv8.pl
   gen_asm_arm64 crypto/bn/asm/armv8-mont.pl
-
+  gen_asm_arm64 crypto/sha/asm/keccak1600-armv8.pl
 
   # Generate mips asm
   gen_asm_mips crypto/aes/asm/aes-mips.pl
@@ -629,6 +632,8 @@ function import() {
   gen_asm_x86 crypto/bf/asm/bf-586.pl
   gen_asm_x86 crypto/modes/asm/ghash-x86.pl
   gen_asm_x86 crypto/ec/asm/ecp_nistz256-x86.pl
+  gen_asm_x86 crypto/sha/asm/keccak1600-mmx.pl
+
   # Generate x86_64 asm
   
   gen_asm_x86_64 crypto/x86_64cpuid.pl
@@ -661,6 +666,13 @@ function import() {
   gen_asm_x86_64 crypto/rc4/asm/rc4-md5-x86_64.pl
   gen_asm_x86_64 crypto/poly1305/asm/poly1305-x86_64.pl
   gen_asm_x86_64 crypto/bn/asm/x86_64-mont.pl
+
+  gen_asm_x86_64 crypto/sha/asm/keccak1600-avx2.pl
+  gen_asm_x86_64 crypto/sha/asm/keccak1600-avx512.pl
+  gen_asm_x86_64 crypto/sha/asm/keccak1600-avx512vl.pl
+  gen_asm_x86_64 crypto/sha/asm/keccak1600-x86_64.pl
+
+  gen_asm_x86_64 crypto/ec/asm/x25519-x86_64.pl
   
   # Setup android.testssl directory
   mkdir android.testssl
@@ -690,7 +702,7 @@ function import() {
   # Prune unnecessary sources
   prune
 
-  NEEDED_SOURCES="$NEEDED_SOURCES android.testssl"
+  NEEDED_SOURCES="$NEEDED_SOURCES"
   for i in $NEEDED_SOURCES; do
     echo "Updating $i"
     rm -r $i

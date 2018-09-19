@@ -1,6 +1,6 @@
 # Auto-generated - DO NOT EDIT!
 # To regenerate, edit openssl.config, then run:
-#     ./import_openssl.sh import /path/to/openssl-1.1.0h.tar.gz
+#     ./import_openssl.sh import /path/to/openssl-1.1.1.tar.gz
 #
 # This script will append to the following variables:
 #
@@ -577,18 +577,13 @@ arm_clang_asflags := \
 arm_cflags := \
   -DAES_ASM \
   -DBSAES_ASM \
-  -DDSO_DLFCN \
   -DECP_NISTZ256_ASM \
   -DGHASH_ASM \
-  -DHAVE_DLFCN_H \
-  -DL_ENDIAN \
-  -DNDEBUG \
+  -DKECCAK1600_ASM \
   -DOPENSSL_BN_ASM_GF2m \
   -DOPENSSL_BN_ASM_MONT \
   -DOPENSSL_CPUID_OBJ \
-  -DOPENSSL_NO_STATIC_ENGINE \
   -DOPENSSL_PIC \
-  -DOPENSSL_THREADS \
   -DPOLY1305_ASM \
   -DSHA1_ASM \
   -DSHA256_ASM \
@@ -618,16 +613,11 @@ arm64_clang_asflags := \
   -no-integrated-as \
 
 arm64_cflags := \
-  -DDSO_DLFCN \
   -DECP_NISTZ256_ASM \
-  -DHAVE_DLFCN_H \
-  -DL_ENDIAN \
-  -DNDEBUG \
+  -DKECCAK1600_ASM \
   -DOPENSSL_BN_ASM_MONT \
   -DOPENSSL_CPUID_OBJ \
-  -DOPENSSL_NO_STATIC_ENGINE \
   -DOPENSSL_PIC \
-  -DOPENSSL_THREADS \
   -DPOLY1305_ASM \
   -DSHA1_ASM \
   -DSHA256_ASM \
@@ -654,21 +644,15 @@ x86_clang_asflags :=
 
 x86_cflags := \
   -DAES_ASM \
-  -DDSO_DLFCN \
   -DECP_NISTZ256_ASM \
   -DGHASH_ASM \
-  -DHAVE_DLFCN_H \
-  -DL_ENDIAN \
   -DMD5_ASM \
-  -DNDEBUG \
   -DOPENSSL_BN_ASM_GF2m \
   -DOPENSSL_BN_ASM_MONT \
   -DOPENSSL_BN_ASM_PART_WORDS \
   -DOPENSSL_CPUID_OBJ \
   -DOPENSSL_IA32_SSE2 \
-  -DOPENSSL_NO_STATIC_ENGINE \
   -DOPENSSL_PIC \
-  -DOPENSSL_THREADS \
   -DPADLOCK_ASM \
   -DPOLY1305_ASM \
   -DRC4_ASM \
@@ -712,21 +696,16 @@ x86_64_clang_asflags :=
 x86_64_cflags := \
   -DAES_ASM \
   -DBSAES_ASM \
-  -DDSO_DLFCN \
   -DECP_NISTZ256_ASM \
   -DGHASH_ASM \
-  -DHAVE_DLFCN_H \
-  -DL_ENDIAN \
+  -DKECCAK1600_ASM \
   -DMD5_ASM \
-  -DNDEBUG \
   -DOPENSSL_BN_ASM_GF2m \
   -DOPENSSL_BN_ASM_MONT \
   -DOPENSSL_BN_ASM_MONT5 \
   -DOPENSSL_CPUID_OBJ \
   -DOPENSSL_IA32_SSE2 \
-  -DOPENSSL_NO_STATIC_ENGINE \
   -DOPENSSL_PIC \
-  -DOPENSSL_THREADS \
   -DPADLOCK_ASM \
   -DPOLY1305_ASM \
   -DRC4_ASM \
@@ -734,6 +713,7 @@ x86_64_cflags := \
   -DSHA256_ASM \
   -DSHA512_ASM \
   -DVPAES_ASM \
+  -DX25519_ASM \
 
 x86_64_src_files := \
   crypto/aes/asm/aes-x86_64.S \

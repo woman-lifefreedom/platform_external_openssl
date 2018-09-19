@@ -1,10 +1,4 @@
-#ifdef OPENSSL_FIPSCANISTER
-# include <openssl/fipssyms.h>
-#endif
-
-#if defined(__mips_smartmips) && !defined(_MIPS_ARCH_MIPS32R2)
-#define _MIPS_ARCH_MIPS32R2
-#endif
+#include "mips_arch.h"
 
 .text
 
@@ -17,7 +11,7 @@ sha1_block_data_order:
 	.frame	$29,16*4,$31
 	.mask	0xc0ff0000,-4
 	.set	noreorder
-	sub $29,16*4
+	subu $29,16*4
 	sw	$31,(16-1)*4($29)
 	sw	$30,(16-2)*4($29)
 	sw	$23,(16-3)*4($29)
@@ -29,7 +23,7 @@ sha1_block_data_order:
 	sw	$17,(16-9)*4($29)
 	sw	$16,(16-10)*4($29)
 	sll $6,6
-	add $6,$5
+	addu $6,$5
 	sw	$6,0($29)
 	lw	$1,0($4)
 	lw	$2,4($4)
@@ -40,41 +34,37 @@ sha1_block_data_order:
 .align	4
 .Loop:
 	.set	reorder
-	lwl	$8,3($5)
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
 	lui	$31,0x5a82
-	lwr	$8,0($5)
+	lw	$8,($5)
 	ori	$31,0x7999	# K_00_19
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$8,$8	# byte swap(0)
-	rotr	$8,$8,16
 #else
-	srl	$25,$8,24	# byte swap(0)
-	srl	$6,$8,8
-	andi	$30,$8,0xFF00
-	sll	$8,$8,24
-	andi	$6,0xFF00
-	sll	$30,$30,8
-	or	$8,$25
-	or	$6,$30
-	or	$8,$6
+	lwl	$8,0($5)
+	lui	$31,0x5a82
+	lwr	$8,3($5)
+	ori	$31,0x7999	# K_00_19
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	addu	$24,$31		# 0
 	xor	$25,$3,$7
 	rotr	$6,$1,27
-	 lwl	$9,1*4+3($5)
 	and	$25,$2
 	addu	$24,$6
-	 lwr	$9,1*4+0($5)
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	 lw	$9,1*4($5)
+#else
+	 lwl	$9,1*4+0($5)
+	 lwr	$9,1*4+3($5)
+#endif
 	xor	$25,$7
 	addu	$24,$8
 	rotr	$2,$2,2
 	addu	$24,$25
 #else
-	 lwl	$9,1*4+3($5)
+	 lwl	$9,1*4+0($5)
 	sll	$25,$1,5	# 0
 	addu	$24,$31
-	 lwr	$9,1*4+0($5)
+	 lwr	$9,1*4+3($5)
 	srl	$6,$1,27
 	addu	$24,$25
 	xor	$25,$3,$7
@@ -86,38 +76,28 @@ sha1_block_data_order:
 	addu	$24,$8
 	or	$2,$30
 	addu	$24,$25
-#endif
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$9,$9	# byte swap(1)
-	rotr	$9,$9,16
-#else
-	srl	$25,$9,24	# byte swap(1)
-	srl	$6,$9,8
-	andi	$30,$9,0xFF00
-	sll	$9,$9,24
-	andi	$6,0xFF00
-	sll	$30,$30,8
-	or	$9,$25
-	or	$6,$30
-	or	$9,$6
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	addu	$7,$31		# 1
 	xor	$25,$2,$3
 	rotr	$6,$24,27
-	 lwl	$10,2*4+3($5)
 	and	$25,$1
 	addu	$7,$6
-	 lwr	$10,2*4+0($5)
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	 lw	$10,2*4($5)
+#else
+	 lwl	$10,2*4+0($5)
+	 lwr	$10,2*4+3($5)
+#endif
 	xor	$25,$3
 	addu	$7,$9
 	rotr	$1,$1,2
 	addu	$7,$25
 #else
-	 lwl	$10,2*4+3($5)
+	 lwl	$10,2*4+0($5)
 	sll	$25,$24,5	# 1
 	addu	$7,$31
-	 lwr	$10,2*4+0($5)
+	 lwr	$10,2*4+3($5)
 	srl	$6,$24,27
 	addu	$7,$25
 	xor	$25,$2,$3
@@ -129,38 +109,28 @@ sha1_block_data_order:
 	addu	$7,$9
 	or	$1,$30
 	addu	$7,$25
-#endif
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$10,$10	# byte swap(2)
-	rotr	$10,$10,16
-#else
-	srl	$25,$10,24	# byte swap(2)
-	srl	$6,$10,8
-	andi	$30,$10,0xFF00
-	sll	$10,$10,24
-	andi	$6,0xFF00
-	sll	$30,$30,8
-	or	$10,$25
-	or	$6,$30
-	or	$10,$6
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	addu	$3,$31		# 2
 	xor	$25,$1,$2
 	rotr	$6,$7,27
-	 lwl	$11,3*4+3($5)
 	and	$25,$24
 	addu	$3,$6
-	 lwr	$11,3*4+0($5)
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	 lw	$11,3*4($5)
+#else
+	 lwl	$11,3*4+0($5)
+	 lwr	$11,3*4+3($5)
+#endif
 	xor	$25,$2
 	addu	$3,$10
 	rotr	$24,$24,2
 	addu	$3,$25
 #else
-	 lwl	$11,3*4+3($5)
+	 lwl	$11,3*4+0($5)
 	sll	$25,$7,5	# 2
 	addu	$3,$31
-	 lwr	$11,3*4+0($5)
+	 lwr	$11,3*4+3($5)
 	srl	$6,$7,27
 	addu	$3,$25
 	xor	$25,$1,$2
@@ -172,38 +142,28 @@ sha1_block_data_order:
 	addu	$3,$10
 	or	$24,$30
 	addu	$3,$25
-#endif
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$11,$11	# byte swap(3)
-	rotr	$11,$11,16
-#else
-	srl	$25,$11,24	# byte swap(3)
-	srl	$6,$11,8
-	andi	$30,$11,0xFF00
-	sll	$11,$11,24
-	andi	$6,0xFF00
-	sll	$30,$30,8
-	or	$11,$25
-	or	$6,$30
-	or	$11,$6
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	addu	$2,$31		# 3
 	xor	$25,$24,$1
 	rotr	$6,$3,27
-	 lwl	$12,4*4+3($5)
 	and	$25,$7
 	addu	$2,$6
-	 lwr	$12,4*4+0($5)
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	 lw	$12,4*4($5)
+#else
+	 lwl	$12,4*4+0($5)
+	 lwr	$12,4*4+3($5)
+#endif
 	xor	$25,$1
 	addu	$2,$11
 	rotr	$7,$7,2
 	addu	$2,$25
 #else
-	 lwl	$12,4*4+3($5)
+	 lwl	$12,4*4+0($5)
 	sll	$25,$3,5	# 3
 	addu	$2,$31
-	 lwr	$12,4*4+0($5)
+	 lwr	$12,4*4+3($5)
 	srl	$6,$3,27
 	addu	$2,$25
 	xor	$25,$24,$1
@@ -215,38 +175,28 @@ sha1_block_data_order:
 	addu	$2,$11
 	or	$7,$30
 	addu	$2,$25
-#endif
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$12,$12	# byte swap(4)
-	rotr	$12,$12,16
-#else
-	srl	$25,$12,24	# byte swap(4)
-	srl	$6,$12,8
-	andi	$30,$12,0xFF00
-	sll	$12,$12,24
-	andi	$6,0xFF00
-	sll	$30,$30,8
-	or	$12,$25
-	or	$6,$30
-	or	$12,$6
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	addu	$1,$31		# 4
 	xor	$25,$7,$24
 	rotr	$6,$2,27
-	 lwl	$13,5*4+3($5)
 	and	$25,$3
 	addu	$1,$6
-	 lwr	$13,5*4+0($5)
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	 lw	$13,5*4($5)
+#else
+	 lwl	$13,5*4+0($5)
+	 lwr	$13,5*4+3($5)
+#endif
 	xor	$25,$24
 	addu	$1,$12
 	rotr	$3,$3,2
 	addu	$1,$25
 #else
-	 lwl	$13,5*4+3($5)
+	 lwl	$13,5*4+0($5)
 	sll	$25,$2,5	# 4
 	addu	$1,$31
-	 lwr	$13,5*4+0($5)
+	 lwr	$13,5*4+3($5)
 	srl	$6,$2,27
 	addu	$1,$25
 	xor	$25,$7,$24
@@ -258,38 +208,28 @@ sha1_block_data_order:
 	addu	$1,$12
 	or	$3,$30
 	addu	$1,$25
-#endif
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$13,$13	# byte swap(5)
-	rotr	$13,$13,16
-#else
-	srl	$25,$13,24	# byte swap(5)
-	srl	$6,$13,8
-	andi	$30,$13,0xFF00
-	sll	$13,$13,24
-	andi	$6,0xFF00
-	sll	$30,$30,8
-	or	$13,$25
-	or	$6,$30
-	or	$13,$6
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	addu	$24,$31		# 5
 	xor	$25,$3,$7
 	rotr	$6,$1,27
-	 lwl	$14,6*4+3($5)
 	and	$25,$2
 	addu	$24,$6
-	 lwr	$14,6*4+0($5)
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	 lw	$14,6*4($5)
+#else
+	 lwl	$14,6*4+0($5)
+	 lwr	$14,6*4+3($5)
+#endif
 	xor	$25,$7
 	addu	$24,$13
 	rotr	$2,$2,2
 	addu	$24,$25
 #else
-	 lwl	$14,6*4+3($5)
+	 lwl	$14,6*4+0($5)
 	sll	$25,$1,5	# 5
 	addu	$24,$31
-	 lwr	$14,6*4+0($5)
+	 lwr	$14,6*4+3($5)
 	srl	$6,$1,27
 	addu	$24,$25
 	xor	$25,$3,$7
@@ -301,38 +241,28 @@ sha1_block_data_order:
 	addu	$24,$13
 	or	$2,$30
 	addu	$24,$25
-#endif
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$14,$14	# byte swap(6)
-	rotr	$14,$14,16
-#else
-	srl	$25,$14,24	# byte swap(6)
-	srl	$6,$14,8
-	andi	$30,$14,0xFF00
-	sll	$14,$14,24
-	andi	$6,0xFF00
-	sll	$30,$30,8
-	or	$14,$25
-	or	$6,$30
-	or	$14,$6
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	addu	$7,$31		# 6
 	xor	$25,$2,$3
 	rotr	$6,$24,27
-	 lwl	$15,7*4+3($5)
 	and	$25,$1
 	addu	$7,$6
-	 lwr	$15,7*4+0($5)
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	 lw	$15,7*4($5)
+#else
+	 lwl	$15,7*4+0($5)
+	 lwr	$15,7*4+3($5)
+#endif
 	xor	$25,$3
 	addu	$7,$14
 	rotr	$1,$1,2
 	addu	$7,$25
 #else
-	 lwl	$15,7*4+3($5)
+	 lwl	$15,7*4+0($5)
 	sll	$25,$24,5	# 6
 	addu	$7,$31
-	 lwr	$15,7*4+0($5)
+	 lwr	$15,7*4+3($5)
 	srl	$6,$24,27
 	addu	$7,$25
 	xor	$25,$2,$3
@@ -346,36 +276,26 @@ sha1_block_data_order:
 	addu	$7,$25
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$15,$15	# byte swap(7)
-	rotr	$15,$15,16
-#else
-	srl	$25,$15,24	# byte swap(7)
-	srl	$6,$15,8
-	andi	$30,$15,0xFF00
-	sll	$15,$15,24
-	andi	$6,0xFF00
-	sll	$30,$30,8
-	or	$15,$25
-	or	$6,$30
-	or	$15,$6
-#endif
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	addu	$3,$31		# 7
 	xor	$25,$1,$2
 	rotr	$6,$7,27
-	 lwl	$16,8*4+3($5)
 	and	$25,$24
 	addu	$3,$6
-	 lwr	$16,8*4+0($5)
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	 lw	$16,8*4($5)
+#else
+	 lwl	$16,8*4+0($5)
+	 lwr	$16,8*4+3($5)
+#endif
 	xor	$25,$2
 	addu	$3,$15
 	rotr	$24,$24,2
 	addu	$3,$25
 #else
-	 lwl	$16,8*4+3($5)
+	 lwl	$16,8*4+0($5)
 	sll	$25,$7,5	# 7
 	addu	$3,$31
-	 lwr	$16,8*4+0($5)
+	 lwr	$16,8*4+3($5)
 	srl	$6,$7,27
 	addu	$3,$25
 	xor	$25,$1,$2
@@ -389,36 +309,26 @@ sha1_block_data_order:
 	addu	$3,$25
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$16,$16	# byte swap(8)
-	rotr	$16,$16,16
-#else
-	srl	$25,$16,24	# byte swap(8)
-	srl	$6,$16,8
-	andi	$30,$16,0xFF00
-	sll	$16,$16,24
-	andi	$6,0xFF00
-	sll	$30,$30,8
-	or	$16,$25
-	or	$6,$30
-	or	$16,$6
-#endif
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	addu	$2,$31		# 8
 	xor	$25,$24,$1
 	rotr	$6,$3,27
-	 lwl	$17,9*4+3($5)
 	and	$25,$7
 	addu	$2,$6
-	 lwr	$17,9*4+0($5)
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	 lw	$17,9*4($5)
+#else
+	 lwl	$17,9*4+0($5)
+	 lwr	$17,9*4+3($5)
+#endif
 	xor	$25,$1
 	addu	$2,$16
 	rotr	$7,$7,2
 	addu	$2,$25
 #else
-	 lwl	$17,9*4+3($5)
+	 lwl	$17,9*4+0($5)
 	sll	$25,$3,5	# 8
 	addu	$2,$31
-	 lwr	$17,9*4+0($5)
+	 lwr	$17,9*4+3($5)
 	srl	$6,$3,27
 	addu	$2,$25
 	xor	$25,$24,$1
@@ -432,36 +342,26 @@ sha1_block_data_order:
 	addu	$2,$25
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$17,$17	# byte swap(9)
-	rotr	$17,$17,16
-#else
-	srl	$25,$17,24	# byte swap(9)
-	srl	$6,$17,8
-	andi	$30,$17,0xFF00
-	sll	$17,$17,24
-	andi	$6,0xFF00
-	sll	$30,$30,8
-	or	$17,$25
-	or	$6,$30
-	or	$17,$6
-#endif
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	addu	$1,$31		# 9
 	xor	$25,$7,$24
 	rotr	$6,$2,27
-	 lwl	$18,10*4+3($5)
 	and	$25,$3
 	addu	$1,$6
-	 lwr	$18,10*4+0($5)
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	 lw	$18,10*4($5)
+#else
+	 lwl	$18,10*4+0($5)
+	 lwr	$18,10*4+3($5)
+#endif
 	xor	$25,$24
 	addu	$1,$17
 	rotr	$3,$3,2
 	addu	$1,$25
 #else
-	 lwl	$18,10*4+3($5)
+	 lwl	$18,10*4+0($5)
 	sll	$25,$2,5	# 9
 	addu	$1,$31
-	 lwr	$18,10*4+0($5)
+	 lwr	$18,10*4+3($5)
 	srl	$6,$2,27
 	addu	$1,$25
 	xor	$25,$7,$24
@@ -475,36 +375,26 @@ sha1_block_data_order:
 	addu	$1,$25
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$18,$18	# byte swap(10)
-	rotr	$18,$18,16
-#else
-	srl	$25,$18,24	# byte swap(10)
-	srl	$6,$18,8
-	andi	$30,$18,0xFF00
-	sll	$18,$18,24
-	andi	$6,0xFF00
-	sll	$30,$30,8
-	or	$18,$25
-	or	$6,$30
-	or	$18,$6
-#endif
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	addu	$24,$31		# 10
 	xor	$25,$3,$7
 	rotr	$6,$1,27
-	 lwl	$19,11*4+3($5)
 	and	$25,$2
 	addu	$24,$6
-	 lwr	$19,11*4+0($5)
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	 lw	$19,11*4($5)
+#else
+	 lwl	$19,11*4+0($5)
+	 lwr	$19,11*4+3($5)
+#endif
 	xor	$25,$7
 	addu	$24,$18
 	rotr	$2,$2,2
 	addu	$24,$25
 #else
-	 lwl	$19,11*4+3($5)
+	 lwl	$19,11*4+0($5)
 	sll	$25,$1,5	# 10
 	addu	$24,$31
-	 lwr	$19,11*4+0($5)
+	 lwr	$19,11*4+3($5)
 	srl	$6,$1,27
 	addu	$24,$25
 	xor	$25,$3,$7
@@ -518,36 +408,26 @@ sha1_block_data_order:
 	addu	$24,$25
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$19,$19	# byte swap(11)
-	rotr	$19,$19,16
-#else
-	srl	$25,$19,24	# byte swap(11)
-	srl	$6,$19,8
-	andi	$30,$19,0xFF00
-	sll	$19,$19,24
-	andi	$6,0xFF00
-	sll	$30,$30,8
-	or	$19,$25
-	or	$6,$30
-	or	$19,$6
-#endif
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	addu	$7,$31		# 11
 	xor	$25,$2,$3
 	rotr	$6,$24,27
-	 lwl	$20,12*4+3($5)
 	and	$25,$1
 	addu	$7,$6
-	 lwr	$20,12*4+0($5)
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	 lw	$20,12*4($5)
+#else
+	 lwl	$20,12*4+0($5)
+	 lwr	$20,12*4+3($5)
+#endif
 	xor	$25,$3
 	addu	$7,$19
 	rotr	$1,$1,2
 	addu	$7,$25
 #else
-	 lwl	$20,12*4+3($5)
+	 lwl	$20,12*4+0($5)
 	sll	$25,$24,5	# 11
 	addu	$7,$31
-	 lwr	$20,12*4+0($5)
+	 lwr	$20,12*4+3($5)
 	srl	$6,$24,27
 	addu	$7,$25
 	xor	$25,$2,$3
@@ -561,36 +441,26 @@ sha1_block_data_order:
 	addu	$7,$25
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$20,$20	# byte swap(12)
-	rotr	$20,$20,16
-#else
-	srl	$25,$20,24	# byte swap(12)
-	srl	$6,$20,8
-	andi	$30,$20,0xFF00
-	sll	$20,$20,24
-	andi	$6,0xFF00
-	sll	$30,$30,8
-	or	$20,$25
-	or	$6,$30
-	or	$20,$6
-#endif
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	addu	$3,$31		# 12
 	xor	$25,$1,$2
 	rotr	$6,$7,27
-	 lwl	$21,13*4+3($5)
 	and	$25,$24
 	addu	$3,$6
-	 lwr	$21,13*4+0($5)
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	 lw	$21,13*4($5)
+#else
+	 lwl	$21,13*4+0($5)
+	 lwr	$21,13*4+3($5)
+#endif
 	xor	$25,$2
 	addu	$3,$20
 	rotr	$24,$24,2
 	addu	$3,$25
 #else
-	 lwl	$21,13*4+3($5)
+	 lwl	$21,13*4+0($5)
 	sll	$25,$7,5	# 12
 	addu	$3,$31
-	 lwr	$21,13*4+0($5)
+	 lwr	$21,13*4+3($5)
 	srl	$6,$7,27
 	addu	$3,$25
 	xor	$25,$1,$2
@@ -604,36 +474,26 @@ sha1_block_data_order:
 	addu	$3,$25
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$21,$21	# byte swap(13)
-	rotr	$21,$21,16
-#else
-	srl	$25,$21,24	# byte swap(13)
-	srl	$6,$21,8
-	andi	$30,$21,0xFF00
-	sll	$21,$21,24
-	andi	$6,0xFF00
-	sll	$30,$30,8
-	or	$21,$25
-	or	$6,$30
-	or	$21,$6
-#endif
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	addu	$2,$31		# 13
 	xor	$25,$24,$1
 	rotr	$6,$3,27
-	 lwl	$22,14*4+3($5)
 	and	$25,$7
 	addu	$2,$6
-	 lwr	$22,14*4+0($5)
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	 lw	$22,14*4($5)
+#else
+	 lwl	$22,14*4+0($5)
+	 lwr	$22,14*4+3($5)
+#endif
 	xor	$25,$1
 	addu	$2,$21
 	rotr	$7,$7,2
 	addu	$2,$25
 #else
-	 lwl	$22,14*4+3($5)
+	 lwl	$22,14*4+0($5)
 	sll	$25,$3,5	# 13
 	addu	$2,$31
-	 lwr	$22,14*4+0($5)
+	 lwr	$22,14*4+3($5)
 	srl	$6,$3,27
 	addu	$2,$25
 	xor	$25,$24,$1
@@ -647,36 +507,26 @@ sha1_block_data_order:
 	addu	$2,$25
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$22,$22	# byte swap(14)
-	rotr	$22,$22,16
-#else
-	srl	$25,$22,24	# byte swap(14)
-	srl	$6,$22,8
-	andi	$30,$22,0xFF00
-	sll	$22,$22,24
-	andi	$6,0xFF00
-	sll	$30,$30,8
-	or	$22,$25
-	or	$6,$30
-	or	$22,$6
-#endif
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	addu	$1,$31		# 14
 	xor	$25,$7,$24
 	rotr	$6,$2,27
-	 lwl	$23,15*4+3($5)
 	and	$25,$3
 	addu	$1,$6
-	 lwr	$23,15*4+0($5)
+#if defined(_MIPS_ARCH_MIPS32R6) || defined(_MIPS_ARCH_MIPS64R6)
+	 lw	$23,15*4($5)
+#else
+	 lwl	$23,15*4+0($5)
+	 lwr	$23,15*4+3($5)
+#endif
 	xor	$25,$24
 	addu	$1,$22
 	rotr	$3,$3,2
 	addu	$1,$25
 #else
-	 lwl	$23,15*4+3($5)
+	 lwl	$23,15*4+0($5)
 	sll	$25,$2,5	# 14
 	addu	$1,$31
-	 lwr	$23,15*4+0($5)
+	 lwr	$23,15*4+3($5)
 	srl	$6,$2,27
 	addu	$1,$25
 	xor	$25,$7,$24
@@ -688,20 +538,6 @@ sha1_block_data_order:
 	addu	$1,$22
 	or	$3,$30
 	addu	$1,$25
-#endif
-#if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
-	wsbh	$23,$23	# byte swap(15)
-	rotr	$23,$23,16
-#else
-	srl	$25,$23,24	# byte swap(15)
-	srl	$6,$23,8
-	andi	$30,$23,0xFF00
-	sll	$23,$23,24
-	andi	$6,0xFF00
-	sll	$30,$30,8
-	or	$23,$25
-	or	$23,$6
-	or	$23,$30
 #endif
 #if defined(_MIPS_ARCH_MIPS32R2) || defined(_MIPS_ARCH_MIPS64R2)
 	addu	$24,$31		# 15
@@ -2944,7 +2780,7 @@ sha1_block_data_order:
 	or	$3,$30
 	addu	$1,$25
 #endif
-	add $5,64
+	addu $5,64
 	lw	$6,0($29)
 
 	addu	$1,$8
@@ -2973,7 +2809,7 @@ sha1_block_data_order:
 	lw	$17,(16-9)*4($29)
 	lw	$16,(16-10)*4($29)
 	jr	$31
-	add $29,16*4
+	addu $29,16*4
 .end	sha1_block_data_order
 .rdata
 .asciiz	"SHA1 for MIPS, CRYPTOGAMS by <appro@openssl.org>"
