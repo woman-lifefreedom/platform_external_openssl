@@ -35,6 +35,11 @@ export LANG=C
 export LC_ALL=C
 PERL_EXE="perl -C0"
 
+if [ ! -x ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/darwin-x86_64/bin/armv7a-linux-androideabi28-clang++ ]; then
+    echo ANDROID_NDK_HOME not set to a valid directory
+    exit 1
+fi
+
 function die() {
   declare -r message=$1
 
@@ -128,7 +133,7 @@ function default_asm_file () {
 function gen_asm_arm () {
   local OUT
   OUT=$(default_asm_file "$@")
-  $PERL_EXE "$1" void "$OUT" > "$OUT"
+  CC=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/darwin-x86_64/bin/armv7a-linux-androideabi28-clang++ $PERL_EXE "$1" void "$OUT" > "$OUT"
 }
 
 # Generate an ARMv8 64-bit assembly file.
@@ -137,24 +142,13 @@ function gen_asm_arm () {
 function gen_asm_arm64 () {
   local OUT
   OUT=$(default_asm_file "$@")
-  $PERL_EXE "$1" linux64 "$OUT" > "$OUT"
+  CC=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-androideabi28-clang++ $PERL_EXE "$1" linux64 "$OUT" > "$OUT"
 }
-
-function gen_asm_mips () {
-  local OUT
-  OUT=$(default_asm_file "$@")
-  # The perl scripts expect to run the target compiler as $CC to determine
-  # the endianess of the target. Setting CC to true is a hack that forces the scripts
-  # to generate little endian output
-  CC=true $PERL_EXE "$1" o32 > "$OUT"
-}
-
-# TODO: gen_asm_mips64
 
 function gen_asm_x86 () {
   local OUT
   OUT=$(default_asm_file "$@")
-  $PERL_EXE "$1" elf -fPIC $(print_values_with_prefix -D $OPENSSL_CRYPTO_DEFINES_x86) "$OUT" 
+  CC=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/darwin-x86_64/bin/i686-linux-android28-clang++ $PERL_EXE "$1" elf -fPIC $(print_values_with_prefix -D $OPENSSL_CRYPTO_DEFINES_x86) "$OUT" 
 
   #exit 1
   #> "$OUT"
@@ -163,7 +157,7 @@ function gen_asm_x86 () {
 function gen_asm_x86_64 () {
   local OUT
   OUT=$(default_asm_file "$@")
-  $PERL_EXE "$1" elf "$OUT" > "$OUT"
+  CC=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/darwin-x86_64/bin/x86_64-linux-android28-clang++ $PERL_EXE "$1" elf "$OUT" > "$OUT"
 }
 
 
@@ -438,8 +432,7 @@ print_defines_in_mk() {
 function generate_config_mk() {
   declare -r output="$1"
   declare -r prefix="$2"
-  declare -r all_archs="arm arm64 x86 x86_64 mips mips64"
-  declare -r variant_archs="mips32r6"
+  declare -r all_archs="arm arm64 x86 x86_64"
 
   echo "Generating $(basename $output)"
   (
@@ -497,13 +490,6 @@ LOCAL_ADDITIONAL_DEPENDENCIES += \$(LOCAL_PATH)/$(basename $output)
 #LOCAL_LDLIBS :=  -latomic
 LOCAL_EXPORT_C_INCLUDE_DIRS := \$(LOCAL_PATH)/include"
     fi
-
-    echo "
-ifdef ARCH_MIPS_REV6
-mips_cflags := \$(mips32r6_cflags)
-mips_src_files := \$(mips32r6_src_files)
-mips_exclude_files := \$(mips32r6_exclude_files)
-endif"
 
     if [ $3 == "target" ]; then
       echo "
@@ -593,17 +579,6 @@ function import() {
   gen_asm_arm64 crypto/poly1305/asm/poly1305-armv8.pl
   gen_asm_arm64 crypto/bn/asm/armv8-mont.pl
   gen_asm_arm64 crypto/sha/asm/keccak1600-armv8.pl
-
-  # Generate mips asm
-  gen_asm_mips crypto/aes/asm/aes-mips.pl
-  gen_asm_mips crypto/bn/asm/mips.pl crypto/bn/asm/bn-mips.S
-  gen_asm_mips crypto/bn/asm/mips-mont.pl
-  gen_asm_mips crypto/sha/asm/sha1-mips.pl
-  gen_asm_mips crypto/sha/asm/sha512-mips.pl crypto/sha/asm/sha256-mips.S
-
-  # TODO: Generate mips32r6 asm
-
-  # TODO: Generate mips64 asm
 
   # Generate x86 asm
   gen_asm_x86 crypto/x86cpuid.pl
