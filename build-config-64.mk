@@ -1,6 +1,6 @@
 # Auto-generated - DO NOT EDIT!
 # To regenerate, edit openssl.config, then run:
-#     ./import_openssl.sh import /path/to/openssl-1.1.1b.tar.gz
+#     ./import_openssl.sh import /path/to/openssl-1.1.1c.tar.gz
 #
 openssl_cflags_64 := \
 

@@ -1,6 +1,6 @@
 # Auto-generated - DO NOT EDIT!
 # To regenerate, edit openssl.config, then run:
-#     ./import_openssl.sh import /path/to/openssl-1.1.1b.tar.gz
+#     ./import_openssl.sh import /path/to/openssl-1.1.1c.tar.gz
 #
 # This script will append to the following variables:
 #
@@ -653,7 +653,6 @@ x86_cflags := \
   -DOPENSSL_CPUID_OBJ \
   -DOPENSSL_IA32_SSE2 \
   -DOPENSSL_PIC \
-  -DPADLOCK_ASM \
   -DPOLY1305_ASM \
   -DRC4_ASM \
   -DRMD160_ASM \
@@ -706,7 +705,6 @@ x86_64_cflags := \
   -DOPENSSL_CPUID_OBJ \
   -DOPENSSL_IA32_SSE2 \
   -DOPENSSL_PIC \
-  -DPADLOCK_ASM \
   -DPOLY1305_ASM \
   -DRC4_ASM \
   -DSHA1_ASM \
