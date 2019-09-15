@@ -582,7 +582,6 @@ function import() {
 
   # Generate x86 asm
   gen_asm_x86 crypto/x86cpuid.pl
-  gen_asm_x86 crypto/aes/asm/aes-586.pl
   gen_asm_x86 crypto/aes/asm/vpaes-x86.pl
   gen_asm_x86 crypto/aes/asm/aesni-x86.pl
   gen_asm_x86 crypto/bn/asm/bn-586.pl
@@ -623,8 +622,6 @@ function import() {
 
   gen_asm_x86_64 crypto/aes/asm/aesni-x86_64.pl
   gen_asm_x86_64 crypto/aes/asm/vpaes-x86_64.pl
-  gen_asm_x86_64 crypto/aes/asm/bsaes-x86_64.pl
-  gen_asm_x86_64 crypto/aes/asm/aes-x86_64.pl
   gen_asm_x86_64 crypto/aes/asm/aesni-sha1-x86_64.pl
   gen_asm_x86_64 crypto/aes/asm/aesni-mb-x86_64.pl
   gen_asm_x86_64 crypto/aes/asm/aesni-sha256-x86_64.pl
