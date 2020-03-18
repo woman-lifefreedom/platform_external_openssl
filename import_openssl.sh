@@ -259,12 +259,12 @@ function generate_build_config_headers() {
   fi
 
   make include/openssl/opensslconf.h
-  make crypto/include/internal/bn_conf.h
-  make crypto/include/internal/dso_conf.h
+  make include/crypto/bn_conf.h
+  make include/crypto/dso_conf.h
 
   rm -f apps/CA.pl.bak openssl/opensslconf.h.bak
   mv -f include/openssl/opensslconf.h include/openssl/opensslconf-$outname.h
-  mv -f crypto/include/internal/bn_conf.h crypto/include/internal/bn_conf-$outname.h
+  mv -f include/crypto/bn_conf.h include/crypto/bn_conf-$outname.h
   #cp -f include/openssl/opensslconf-$outname.h include/openssl/opensslconf-$outname.h
 
   local tmpfile=$(mktemp tmp.XXXXXXXXXX)
@@ -329,7 +329,7 @@ function generate_opensslconf_h() {
   echo "#else"
   echo "#include \"bn_conf-trusty.h\""
   echo "#endif"
-  ) > crypto/include/internal/bn_conf.h
+  ) > include/crypto/bn_conf.h
   # Generate a compatible version for the static library builds
   echo "Generating opensslconf-static.h"
   (

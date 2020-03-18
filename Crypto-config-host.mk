@@ -1,6 +1,6 @@
 # Auto-generated - DO NOT EDIT!
 # To regenerate, edit openssl.config, then run:
-#     ./import_openssl.sh import /path/to/openssl-1.1.1d.tar.gz
+#     ./import_openssl.sh import /path/to/openssl-1.1.1e.tar.gz
 #
 # This script will append to the following variables:
 #
@@ -643,6 +643,7 @@ arm64_exclude_files := \
 x86_clang_asflags :=
 
 x86_cflags := \
+  -DAESNI_ASM \
   -DECP_NISTZ256_ASM \
   -DGHASH_ASM \
   -DMD5_ASM \
@@ -692,6 +693,7 @@ x86_exclude_files := \
 x86_64_clang_asflags :=
 
 x86_64_cflags := \
+  -DAESNI_ASM \
   -DECP_NISTZ256_ASM \
   -DGHASH_ASM \
   -DKECCAK1600_ASM \

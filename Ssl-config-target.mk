@@ -1,6 +1,6 @@
 # Auto-generated - DO NOT EDIT!
 # To regenerate, edit openssl.config, then run:
-#     ./import_openssl.sh import /path/to/openssl-1.1.1d.tar.gz
+#     ./import_openssl.sh import /path/to/openssl-1.1.1e.tar.gz
 #
 # This script will append to the following variables:
 #

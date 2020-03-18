@@ -489,7 +489,6 @@ set(crypto_srcs
   crypto/store/store_init.c
   crypto/store/store_err.c
   crypto/store/store_register.c
-  crypto/store/store_locl.h
   crypto/store/store_lib.c
   crypto/store/store_strings.c
   crypto/store/loader_file.c
@@ -734,7 +733,8 @@ if (${ANDROID_ABI} STREQUAL "armeabi-v7a")
       -DVPAES_ASM
       )
   elseif(${ANDROID_ABI} STREQUAL "x86")
-    target_compile_definitions(crypto PRIVATE   
+    target_compile_definitions(crypto PRIVATE
+      -DAESNI_ASM
       -DECP_NISTZ256_ASM
       -DGHASH_ASM
       -DMD5_ASM
@@ -748,6 +748,7 @@ if (${ANDROID_ABI} STREQUAL "armeabi-v7a")
       )
   elseif(${ANDROID_ABI} STREQUAL "x86_64")
     target_compile_definitions(crypto PRIVATE
+      -DAESNI_ASM
       -DECP_NISTZ256_ASM
       -DGHASH_ASM
       -DMD5_ASM
