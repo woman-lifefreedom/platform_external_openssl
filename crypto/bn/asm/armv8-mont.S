@@ -131,7 +131,7 @@ bn_mul_mont:
 	mul	x16,x14,x15		// np[j]*m1
 	adds	x12,x12,x6
 	umulh	x17,x14,x15
-	str	x12,[x22,#-16]		// tp[j-1]
+	stur	x12,[x22,#-16]		// tp[j-1]
 	cbnz	x21,.Linner
 
 .Linner_skip:
@@ -187,13 +187,13 @@ bn_mul_mont:
 	csel	x14,x23,x8,lo		// did it borrow?
 	ldr	x23,[x22],#8
 	ldr	x8,[x0],#8
-	str	xzr,[x22,#-16]		// wipe tp
-	str	x14,[x0,#-16]
+	stur	xzr,[x22,#-16]		// wipe tp
+	stur	x14,[x0,#-16]
 	cbnz	x5,.Lcond_copy
 
 	csel	x14,x23,x8,lo
-	str	xzr,[x22,#-8]		// wipe tp
-	str	x14,[x0,#-8]
+	stur	xzr,[x22,#-8]		// wipe tp
+	stur	x14,[x0,#-8]
 
 	ldp	x19,x20,[x29,#16]
 	mov	sp,x29
@@ -518,7 +518,7 @@ __bn_sqr8x_mont:
 	ldp	x10,x11,[x2,#8*4]
 	ldp	x12,x13,[x2,#8*6]
 	adds	x19,x19,x6
-	ldr	x4,[x0,#-8*8]
+	ldur	x4,[x0,#-8*8]
 	adcs	x20,x20,x7
 	ldp	x6,x7,[x1,#8*0]
 	adcs	x21,x21,x8
@@ -713,7 +713,7 @@ __bn_sqr8x_mont:
 	//adc	x28,xzr,xzr		// moved below
 	cbz	x27,.Lsqr8x8_post_condition
 
-	ldr	x4,[x2,#-8*8]
+	ldur	x4,[x2,#-8*8]
 	ldp	x6,x7,[x1,#8*0]
 	ldp	x8,x9,[x1,#8*2]
 	ldp	x10,x11,[x1,#8*4]
@@ -771,7 +771,7 @@ __bn_sqr8x_mont:
 	ldp	x12,x13,[x2,#8*6]
 	cbz	x27,.Lsqr8x_tail_break
 
-	ldr	x4,[x0,#-8*8]
+	ldur	x4,[x0,#-8*8]
 	adds	x19,x19,x6
 	adcs	x20,x20,x7
 	ldp	x6,x7,[x1,#8*0]
