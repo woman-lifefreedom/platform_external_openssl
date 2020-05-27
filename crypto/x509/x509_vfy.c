@@ -25,6 +25,13 @@
 #include "crypto/x509.h"
 #include "x509_local.h"
 
+DEFINE_STACK_OF(X509)
+DEFINE_STACK_OF(X509_REVOKED)
+DEFINE_STACK_OF(GENERAL_NAME)
+DEFINE_STACK_OF(X509_CRL)
+DEFINE_STACK_OF(DIST_POINT)
+DEFINE_STACK_OF_STRING()
+
 /* CRL score values */
 
 /* No unhandled critical extensions */
@@ -3251,6 +3258,7 @@ static int build_chain(X509_STORE_CTX *ctx)
             if (ss < 0) {
                 X509err(X509_F_BUILD_CHAIN, ERR_R_INTERNAL_ERROR);
                 ctx->error = X509_V_ERR_UNSPECIFIED;
+                sk_X509_free(sktmp);
                 return 0;
             }
 

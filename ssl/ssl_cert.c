@@ -25,6 +25,9 @@
 #include "ssl_cert_table.h"
 #include "internal/thread_once.h"
 
+DEFINE_STACK_OF(X509)
+DEFINE_STACK_OF(X509_NAME)
+
 static int ssl_security_default_callback(const SSL *s, const SSL_CTX *ctx,
                                          int op, int bits, int nid, void *other,
                                          void *ex);
@@ -869,7 +872,10 @@ int ssl_build_cert_chain(SSL *s, SSL_CTX *ctx, int flags)
             untrusted = cpk->chain;
     }
 
-    xs_ctx = X509_STORE_CTX_new_with_libctx(s->ctx->libctx, s->ctx->propq);
+    if (s == NULL)
+        xs_ctx = X509_STORE_CTX_new_with_libctx(ctx->libctx, ctx->propq);
+    else
+        xs_ctx = X509_STORE_CTX_new_with_libctx(s->ctx->libctx, s->ctx->propq);
     if (xs_ctx == NULL) {
         SSLerr(SSL_F_SSL_BUILD_CERT_CHAIN, ERR_R_MALLOC_FAILURE);
         goto err;

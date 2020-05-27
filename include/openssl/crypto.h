@@ -169,7 +169,8 @@ struct crypto_ex_data_st {
     OPENSSL_CTX *ctx;
     STACK_OF(void) *sk;
 };
-DEFINE_STACK_OF(void)
+
+DEFINE_OR_DECLARE_STACK_OF(void)
 
 /*
  * Per class, we have a STACK of function pointers.
@@ -375,9 +376,6 @@ ossl_noreturn void OPENSSL_die(const char *assertion, const char *file, int line
     (void)((e) ? 0 : (OPENSSL_die("assertion failed: " #e, OPENSSL_FILE, OPENSSL_LINE), 1))
 
 int OPENSSL_isservice(void);
-
-int FIPS_mode(void);
-int FIPS_mode_set(int r);
 
 void OPENSSL_init(void);
 # ifdef OPENSSL_SYS_UNIX

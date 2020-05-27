@@ -7,9 +7,26 @@
  * https://www.openssl.org/source/license.html
  */
 
+#include "crypto/rsa.h"
 #include "internal/der.h"
 
 /* Well known OIDs precompiled */
+extern const unsigned char der_oid_id_sha256[11];
+extern const unsigned char der_oid_id_sha384[11];
+extern const unsigned char der_oid_id_sha512[11];
+extern const unsigned char der_oid_id_sha224[11];
+extern const unsigned char der_oid_id_sha512_224[11];
+extern const unsigned char der_oid_id_sha512_256[11];
+extern const unsigned char der_oid_id_sha3_224[11];
+extern const unsigned char der_oid_id_sha3_256[11];
+extern const unsigned char der_oid_id_sha3_384[11];
+extern const unsigned char der_oid_id_sha3_512[11];
+extern const unsigned char der_oid_id_shake128[11];
+extern const unsigned char der_oid_id_shake256[11];
+extern const unsigned char der_oid_id_shake128_len[11];
+extern const unsigned char der_oid_id_shake256_len[11];
+extern const unsigned char der_oid_id_KMACWithSHAKE128[11];
+extern const unsigned char der_oid_id_KMACWithSHAKE256[11];
 extern const unsigned char der_oid_rsaEncryption[11];
 extern const unsigned char der_oid_id_RSAES_OAEP[11];
 extern const unsigned char der_oid_id_pSpecified[11];
@@ -31,8 +48,12 @@ extern const unsigned char der_oid_id_rsassa_pkcs1_v1_5_with_sha3_224[11];
 extern const unsigned char der_oid_id_rsassa_pkcs1_v1_5_with_sha3_256[11];
 extern const unsigned char der_oid_id_rsassa_pkcs1_v1_5_with_sha3_384[11];
 extern const unsigned char der_oid_id_rsassa_pkcs1_v1_5_with_sha3_512[11];
+extern const unsigned char der_oid_md4WithRSAEncryption[11];
+extern const unsigned char der_oid_ripemd160WithRSAEncryption[8];
 
 
+int DER_w_RSASSA_PSS_params(WPACKET *pkt, int tag,
+                            const RSA_PSS_PARAMS_30 *pss);
 int DER_w_algorithmIdentifier_RSA(WPACKET *pkt, int tag, RSA *rsa);
 int DER_w_algorithmIdentifier_RSA_with(WPACKET *pkt, int tag,
                                        RSA *rsa, int mdnid);

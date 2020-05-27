@@ -45,10 +45,11 @@ int OSSL_PARAM_modified(const OSSL_PARAM *p)
     return p != NULL && p->return_size != OSSL_PARAM_UNMODIFIED;
 }
 
-void OSSL_PARAM_set_unmodified(OSSL_PARAM *p)
+void OSSL_PARAM_set_all_unmodified(OSSL_PARAM *p)
 {
     if (p != NULL)
-        p->return_size = OSSL_PARAM_UNMODIFIED;
+        while (p->key != NULL)
+            p++->return_size = OSSL_PARAM_UNMODIFIED;
 }
 
 int OSSL_PARAM_get_int(const OSSL_PARAM *p, int *val)
@@ -779,7 +780,7 @@ static int get_string_internal(const OSSL_PARAM *p, void **val, size_t max_len,
 {
     size_t sz;
 
-    if (val == NULL || p == NULL || p->data_type != type)
+    if ((val == NULL && used_len == NULL) || p == NULL || p->data_type != type)
         return 0;
 
     sz = p->data_size;
@@ -791,6 +792,9 @@ static int get_string_internal(const OSSL_PARAM *p, void **val, size_t max_len,
         return 1;
     if (p->data == NULL)
         return 0;
+
+    if (val == NULL)
+        return 1;
 
     if (*val == NULL) {
         char *const q = OPENSSL_malloc(sz);

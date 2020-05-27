@@ -60,6 +60,12 @@ typedef unsigned int u_int;
 #endif
 #include "internal/sockets.h"
 
+DEFINE_STACK_OF(X509_EXTENSION)
+DEFINE_STACK_OF(X509_CRL)
+DEFINE_STACK_OF(X509)
+DEFINE_STACK_OF(SSL_CIPHER)
+DEFINE_STACK_OF_STRING()
+
 static int not_resumable_sess_cb(SSL *s, int is_forward_secure);
 static int sv_body(int s, int stype, int prot, unsigned char *context);
 static int www_body(int s, int stype, int prot, unsigned char *context);
@@ -755,7 +761,7 @@ typedef enum OPTION_choice {
     OPT_SRTP_PROFILES, OPT_KEYMATEXPORT, OPT_KEYMATEXPORTLEN,
     OPT_KEYLOG_FILE, OPT_MAX_EARLY, OPT_RECV_MAX_EARLY, OPT_EARLY_DATA,
     OPT_S_NUM_TICKETS, OPT_ANTI_REPLAY, OPT_NO_ANTI_REPLAY, OPT_SCTP_LABEL_BUG,
-    OPT_HTTP_SERVER_BINMODE,
+    OPT_HTTP_SERVER_BINMODE, OPT_NOCANAMES,
     OPT_R_ENUM,
     OPT_S_ENUM,
     OPT_V_ENUM,
@@ -946,6 +952,8 @@ const OPTIONS s_server_options[] = {
     {"anti_replay", OPT_ANTI_REPLAY, '-', "Switch on anti-replay protection (default)"},
     {"no_anti_replay", OPT_NO_ANTI_REPLAY, '-', "Switch off anti-replay protection"},
     {"http_server_binmode", OPT_HTTP_SERVER_BINMODE, '-', "opening files in binary mode when acting as http server (-WWW and -HTTP)"},
+    {"no_ca_names", OPT_NOCANAMES, '-',
+     "Disable TLS Extension CA Names"},
     {"stateless", OPT_STATELESS, '-', "Require TLSv1.3 cookies"},
 #ifndef OPENSSL_NO_SSL3
     {"ssl3", OPT_SSL3, '-', "Just talk SSLv3"},
@@ -1083,6 +1091,7 @@ int s_server_main(int argc, char *argv[])
     const char *keylog_file = NULL;
     int max_early_data = -1, recv_max_early_data = -1;
     char *psksessf = NULL;
+    int no_ca_names = 0;
 #ifndef OPENSSL_NO_SCTP
     int sctp_label_bug = 0;
 #endif
@@ -1649,6 +1658,9 @@ int s_server_main(int argc, char *argv[])
         case OPT_HTTP_SERVER_BINMODE:
             http_server_binmode = 1;
             break;
+        case OPT_NOCANAMES:
+            no_ca_names = 1;
+            break;
         case OPT_SENDFILE:
 #ifndef OPENSSL_NO_KTLS
             use_sendfile = 1;
@@ -1730,18 +1742,14 @@ int s_server_main(int argc, char *argv[])
     if (nocert == 0) {
         s_key = load_key(s_key_file, s_key_format, 0, pass, engine,
                          "server certificate private key file");
-        if (s_key == NULL) {
-            ERR_print_errors(bio_err);
+        if (s_key == NULL)
             goto end;
-        }
 
         s_cert = load_cert(s_cert_file, s_cert_format,
                            "server certificate file");
 
-        if (s_cert == NULL) {
-            ERR_print_errors(bio_err);
+        if (s_cert == NULL)
             goto end;
-        }
         if (s_chain_file != NULL) {
             if (!load_certs(s_chain_file, &s_chain, FORMAT_PEM, NULL,
                             "server certificate chain"))
@@ -1751,18 +1759,14 @@ int s_server_main(int argc, char *argv[])
         if (tlsextcbp.servername != NULL) {
             s_key2 = load_key(s_key_file2, s_key_format, 0, pass, engine,
                               "second server certificate private key file");
-            if (s_key2 == NULL) {
-                ERR_print_errors(bio_err);
+            if (s_key2 == NULL)
                 goto end;
-            }
 
             s_cert2 = load_cert(s_cert_file2, s_cert_format,
                                 "second server certificate file");
 
-            if (s_cert2 == NULL) {
-                ERR_print_errors(bio_err);
+            if (s_cert2 == NULL)
                 goto end;
-            }
         }
     }
 #if !defined(OPENSSL_NO_NEXTPROTONEG)
@@ -1781,12 +1785,9 @@ int s_server_main(int argc, char *argv[])
 
     if (crl_file != NULL) {
         X509_CRL *crl;
-        crl = load_crl(crl_file, crl_format);
-        if (crl == NULL) {
-            BIO_puts(bio_err, "Error loading CRL\n");
-            ERR_print_errors(bio_err);
+        crl = load_crl(crl_file, crl_format, "CRL");
+        if (crl == NULL)
             goto end;
-        }
         crls = sk_X509_CRL_new_null();
         if (crls == NULL || !sk_X509_CRL_push(crls, crl)) {
             BIO_puts(bio_err, "Error adding CRL\n");
@@ -1803,10 +1804,8 @@ int s_server_main(int argc, char *argv[])
 
         s_dkey = load_key(s_dkey_file, s_dkey_format,
                           0, dpass, engine, "second certificate private key file");
-        if (s_dkey == NULL) {
-            ERR_print_errors(bio_err);
+        if (s_dkey == NULL)
             goto end;
-        }
 
         s_dcert = load_cert(s_dcert_file, s_dcert_format,
                             "second server certificate file");
@@ -1891,7 +1890,6 @@ int s_server_main(int argc, char *argv[])
         }
         BIO_printf(bio_err, "id_prefix '%s' set.\n", session_id_prefix);
     }
-    SSL_CTX_set_quiet_shutdown(ctx, 1);
     if (exc != NULL)
         ssl_ctx_set_excert(ctx, exc);
 
@@ -1906,6 +1904,10 @@ int s_server_main(int argc, char *argv[])
 
     if (async) {
         SSL_CTX_set_mode(ctx, SSL_MODE_ASYNC);
+    }
+
+    if (no_ca_names) {
+        SSL_CTX_set_options(ctx, SSL_OP_DISABLE_TLSEXT_CA_NAMES);
     }
 
     if (max_send_fragment > 0
@@ -1989,7 +1991,6 @@ int s_server_main(int argc, char *argv[])
             }
             BIO_printf(bio_err, "id_prefix '%s' set.\n", session_id_prefix);
         }
-        SSL_CTX_set_quiet_shutdown(ctx2, 1);
         if (exc != NULL)
             ssl_ctx_set_excert(ctx2, exc);
 
@@ -2777,7 +2778,7 @@ static int sv_body(int s, int stype, int prot, unsigned char *context)
  err:
     if (con != NULL) {
         BIO_printf(bio_s_out, "shutting down SSL\n");
-        SSL_set_shutdown(con, SSL_SENT_SHUTDOWN | SSL_RECEIVED_SHUTDOWN);
+        do_ssl_shutdown(con);
         SSL_free(con);
     }
     BIO_printf(bio_s_out, "CONNECTION CLOSED\n");
@@ -3446,7 +3447,7 @@ static int www_body(int s, int stype, int prot, unsigned char *context)
     }
  end:
     /* make sure we re-use sessions */
-    SSL_set_shutdown(con, SSL_SENT_SHUTDOWN | SSL_RECEIVED_SHUTDOWN);
+    do_ssl_shutdown(con);
 
  err:
     OPENSSL_free(buf);
@@ -3600,7 +3601,7 @@ static int rev_body(int s, int stype, int prot, unsigned char *context)
     }
  end:
     /* make sure we re-use sessions */
-    SSL_set_shutdown(con, SSL_SENT_SHUTDOWN | SSL_RECEIVED_SHUTDOWN);
+    do_ssl_shutdown(con);
 
  err:
 

@@ -416,7 +416,6 @@ set(crypto_srcs
         crypto/modes/xts128.c
         crypto/modes/wrap128.c
         crypto/o_dir.c
-        crypto/o_fips.c
         crypto/o_fopen.c
         crypto/o_init.c
         crypto/o_str.c
@@ -521,6 +520,7 @@ set(crypto_srcs
         crypto/rsa/rsa_prn.c
         crypto/rsa/rsa_pss.c
         crypto/rsa/rsa_saos.c
+        crypto/rsa/rsa_schemes.c
         crypto/rsa/rsa_sign.c
         crypto/rsa/rsa_sp800_56b_check.c
         crypto/rsa/rsa_sp800_56b_gen.c
@@ -757,6 +757,7 @@ set(provider_srcs
         providers/common/der/der_dsa.c
         providers/common/der/der_ec.c
         providers/common/der/der_rsa.c
+        providers/common/provider_ctx.c
         providers/common/provider_util.c
         providers/common/provider_err.c
         providers/common/nid_to_name.c
@@ -804,6 +805,10 @@ set(provider_srcs
         providers/implementations/serializers/serializer_dsa.c
         providers/implementations/serializers/serializer_ecx.c
         providers/implementations/serializers/serializer_ec.c
+        providers/implementations/signature/dsa.c
+        providers/implementations/signature/ecdsa.c
+        providers/implementations/signature/eddsa.c
+        providers/implementations/signature/rsa.c
         providers/implementations/ciphers/cipher_chacha20.c
         providers/implementations/ciphers/cipher_aes_cbc_hmac_sha1_hw.c
         providers/implementations/ciphers/cipher_aes_cbc_hmac_sha.c
@@ -898,7 +903,7 @@ target_include_directories(crypto PRIVATE
 
         )
 
-target_compile_definitions(crypto PRIVATE -DNO_WINDOWS_BRAINDEATH -DMODULESDIR="ossl-modules")
+target_compile_definitions(crypto PRIVATE -DNO_WINDOWS_BRAINDEATH -DMODULESDIR="ossl-modules" -DOPENSSL_BUILDING_OPENSSL)
 target_compile_options(crypto PRIVATE -Wno-missing-field-initializers -Wno-unused-parameter
         -DKECCAK1600_ASM
         -DNDEBUG
@@ -1021,6 +1026,7 @@ set(ssl_srcs
 
 PREPEND(ssl_srcs_with_path ${OPENSSL_PATH} ${ssl_srcs})
 add_library(ssl ${SSLLIBTYPE} ${ssl_srcs_with_path})
+target_compile_definitions(ssl PRIVATE -DOPENSSL_BUILDING_OPENSSL)
 
 
 target_link_libraries(ssl crypto)
