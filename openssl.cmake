@@ -754,9 +754,14 @@ endif ()
 set(provider_srcs
         providers/nullprov.c
         providers/common/bio_prov.c
-        providers/common/der/der_dsa.c
-        providers/common/der/der_ec.c
-        providers/common/der/der_rsa.c
+        providers/common/der/der_digests_gen.c
+        providers/common/der/der_dsa_gen.c
+        providers/common/der/der_dsa_sig.c
+        providers/common/der/der_ec_gen.c
+        providers/common/der/der_ec_sig.c
+        providers/common/der/der_rsa_gen.c
+        providers/common/der/der_rsa_key.c
+        providers/common/der/der_rsa_sig.c
         providers/common/provider_ctx.c
         providers/common/provider_util.c
         providers/common/provider_err.c

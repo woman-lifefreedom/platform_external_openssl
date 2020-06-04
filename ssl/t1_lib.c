@@ -621,7 +621,7 @@ static int tls1_check_pkey_comp(SSL *s, EVP_PKEY *pkey)
              */
             return 1;
     } else {
-        int field_type = EC_METHOD_get_field_type(EC_GROUP_method_of(grp));
+        int field_type = EC_GROUP_get_field_type(grp);
 
         if (field_type == NID_X9_62_prime_field)
             comp_id = TLSEXT_ECPOINTFORMAT_ansiX962_compressed_prime;
@@ -999,6 +999,21 @@ static const SIGALG_LOOKUP *tls1_get_legacy_sigalg(const SSL *s, int idx)
                         idx = real_idx;
                         break;
                     }
+                }
+            }
+            /*
+             * As both SSL_PKEY_GOST12_512 and SSL_PKEY_GOST12_256 indices can be used
+             * with new (aGOST12-only) ciphersuites, we should find out which one is available really.
+             */
+            else if (idx == SSL_PKEY_GOST12_256) {
+                int real_idx;
+
+                for (real_idx = SSL_PKEY_GOST12_512; real_idx >= SSL_PKEY_GOST12_256;
+                     real_idx--) {
+                     if (s->cert->pkeys[real_idx].privatekey != NULL) {
+                         idx = real_idx;
+                         break;
+                     }
                 }
             }
         } else {
@@ -1794,7 +1809,7 @@ static int tls12_sigalg_allowed(const SSL *s, int op, const SIGALG_LOOKUP *lu)
                 if (ssl_cipher_disabled(s, c, SSL_SECOP_CIPHER_SUPPORTED, 0))
                     continue;
 
-                if ((c->algorithm_mkey & SSL_kGOST) != 0)
+                if ((c->algorithm_mkey & (SSL_kGOST | SSL_kGOST18)) != 0)
                     break;
             }
             if (i == num)
