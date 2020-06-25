@@ -378,6 +378,7 @@ set(crypto_srcs
         crypto/evp/pmeth_fn.c
         crypto/evp/pmeth_gn.c
         crypto/evp/pmeth_lib.c
+        crypto/evp/evp_rand.c
         crypto/evp/signature.c
         crypto/ex_data.c
         crypto/ffc/ffc_backend.c
@@ -485,14 +486,9 @@ set(crypto_srcs
         crypto/property/property_parse.c
         crypto/property/property_string.c
         crypto/rand/drbg_lib.c
-        crypto/rand/drbg_ctr.c
         crypto/rand/rand_egd.c
         crypto/rand/rand_err.c
-        crypto/rand/drbg_hash.c
-        crypto/rand/drbg_hmac.c
         crypto/rand/rand_lib.c
-        crypto/rand/rand_unix.c
-        crypto/rand/rand_win.c
         crypto/rand/randfile.c
         crypto/rc2/rc2_cbc.c
         crypto/rc2/rc2_ecb.c
@@ -754,6 +750,7 @@ endif ()
 set(provider_srcs
         providers/nullprov.c
         providers/common/bio_prov.c
+        providers/common/capabilities.c
         providers/common/der/der_digests_gen.c
         providers/common/der/der_dsa_gen.c
         providers/common/der/der_dsa_sig.c
@@ -767,6 +764,7 @@ set(provider_srcs
         providers/common/provider_err.c
         providers/common/nid_to_name.c
         providers/defltprov.c
+        providers/implementations/asymciphers/rsa_enc.c
         providers/implementations/exchange/ecx_exch.c
         providers/implementations/exchange/ecdh_exch.c
         providers/implementations/exchange/dh_exch.c
@@ -789,7 +787,13 @@ set(provider_srcs
         providers/implementations/kdfs/pbkdf2_fips.c
         providers/implementations/kdfs/kbkdf.c
         providers/implementations/kdfs/pbkdf2.c
-        providers/implementations/asymciphers/rsa_enc.c
+        providers/implementations/rands/drbg.c
+        providers/implementations/rands/drbg_ctr.c
+        providers/implementations/rands/drbg_hash.c
+        providers/implementations/rands/drbg_hmac.c
+        providers/implementations/rands/rand_pool.c
+        providers/implementations/rands/seeding/rand_unix.c
+        providers/implementations/rands/test_rng.c
         providers/implementations/serializers/serializer_common.c
         providers/implementations/serializers/serializer_dsa_priv.c
         providers/implementations/serializers/serializer_dh.c

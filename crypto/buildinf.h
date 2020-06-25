@@ -11,7 +11,7 @@
  */
 
 #define PLATFORM "platform: linux-armv4"
-#define DATE "built on: Thu Jun  4 15:19:12 2020 UTC"
+#define DATE "built on: Thu Jun 25 23:03:22 2020 UTC"
 
 /*
  * Generate compiler_flags as an array of individual characters. This is a
