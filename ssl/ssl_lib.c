@@ -9,6 +9,9 @@
  * https://www.openssl.org/source/license.html
  */
 
+/* We need to use some engine deprecated APIs */
+#define OPENSSL_SUPPRESS_DEPRECATED
+
 #include <stdio.h>
 #include "ssl_local.h"
 #include "e_os.h"
@@ -34,51 +37,37 @@ DEFINE_STACK_OF(OCSP_RESPID)
 DEFINE_STACK_OF(SRTP_PROTECTION_PROFILE)
 DEFINE_STACK_OF(SCT)
 
-static int ssl_undefined_function_1(SSL *ssl, SSL3_RECORD *r, size_t s, int t)
+static int ssl_undefined_function_1(SSL *ssl, SSL3_RECORD *r, size_t s, int t,
+                                    SSL_MAC_BUF *mac, size_t macsize)
 {
-    (void)r;
-    (void)s;
-    (void)t;
     return ssl_undefined_function(ssl);
 }
 
 static int ssl_undefined_function_2(SSL *ssl, SSL3_RECORD *r, unsigned char *s,
                                     int t)
 {
-    (void)r;
-    (void)s;
-    (void)t;
     return ssl_undefined_function(ssl);
 }
 
 static int ssl_undefined_function_3(SSL *ssl, unsigned char *r,
                                     unsigned char *s, size_t t, size_t *u)
 {
-    (void)r;
-    (void)s;
-    (void)t;
-    (void)u;
     return ssl_undefined_function(ssl);
 }
 
 static int ssl_undefined_function_4(SSL *ssl, int r)
 {
-    (void)r;
     return ssl_undefined_function(ssl);
 }
 
 static size_t ssl_undefined_function_5(SSL *ssl, const char *r, size_t s,
                                        unsigned char *t)
 {
-    (void)r;
-    (void)s;
-    (void)t;
     return ssl_undefined_function(ssl);
 }
 
 static int ssl_undefined_function_6(int r)
 {
-    (void)r;
     return ssl_undefined_function(NULL);
 }
 
@@ -86,13 +75,6 @@ static int ssl_undefined_function_7(SSL *ssl, unsigned char *r, size_t s,
                                     const char *t, size_t u,
                                     const unsigned char *v, size_t w, int x)
 {
-    (void)r;
-    (void)s;
-    (void)t;
-    (void)u;
-    (void)v;
-    (void)w;
-    (void)x;
     return ssl_undefined_function(ssl);
 }
 
@@ -1217,6 +1199,8 @@ void SSL_free(SSL *s)
     OPENSSL_free(s->ext.ocsp.resp);
     OPENSSL_free(s->ext.alpn);
     OPENSSL_free(s->ext.tls13_cookie);
+    if (s->clienthello != NULL)
+        OPENSSL_free(s->clienthello->pre_proc_exts);
     OPENSSL_free(s->clienthello);
     OPENSSL_free(s->pha_context);
     EVP_MD_CTX_free(s->pha_dgst);
@@ -1543,21 +1527,22 @@ int SSL_has_pending(const SSL *s)
     return RECORD_LAYER_read_pending(&s->rlayer);
 }
 
-X509 *SSL_get_peer_certificate(const SSL *s)
+X509 *SSL_get1_peer_certificate(const SSL *s)
 {
-    X509 *r;
+    X509 *r = SSL_get0_peer_certificate(s);
 
-    if ((s == NULL) || (s->session == NULL))
-        r = NULL;
-    else
-        r = s->session->peer;
-
-    if (r == NULL)
-        return r;
-
-    X509_up_ref(r);
+    if (r != NULL)
+        X509_up_ref(r);
 
     return r;
+}
+
+X509 *SSL_get0_peer_certificate(const SSL *s)
+{
+    if ((s == NULL) || (s->session == NULL))
+        return NULL;
+    else
+        return s->session->peer;
 }
 
 STACK_OF(X509) *SSL_get_peer_cert_chain(const SSL *s)
@@ -2070,7 +2055,8 @@ ossl_ssize_t SSL_sendfile(SSL *s, int fd, off_t offset, size_t size, int flags)
     }
 
 #ifdef OPENSSL_NO_KTLS
-    ERR_raise_data(ERR_LIB_SYS, ERR_R_INTERNAL_ERROR, "calling sendfile()");
+    ERR_raise_data(ERR_LIB_SSL, ERR_R_INTERNAL_ERROR,
+                   "can't call ktls_sendfile(), ktls disabled");
     return -1;
 #else
     ret = ktls_sendfile(SSL_get_wfd(s), fd, offset, size, flags);

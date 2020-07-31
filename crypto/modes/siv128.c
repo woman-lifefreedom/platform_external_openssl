@@ -13,6 +13,7 @@
 #include <openssl/evp.h>
 #include <openssl/core_names.h>
 #include <openssl/params.h>
+#include "internal/endian.h"
 #include "crypto/modes.h"
 #include "crypto/siv.h"
 
@@ -40,24 +41,18 @@ __owur static ossl_inline uint64_t byteswap8(uint64_t x)
 
 __owur static ossl_inline uint64_t siv128_getword(SIV_BLOCK const *b, size_t i)
 {
-    const union {
-        long one;
-        char little;
-    } is_endian = { 1 };
+    DECLARE_IS_ENDIAN;
 
-    if (is_endian.little)
+    if (IS_LITTLE_ENDIAN)
         return byteswap8(b->word[i]);
     return b->word[i];
 }
 
 static ossl_inline void siv128_putword(SIV_BLOCK *b, size_t i, uint64_t x)
 {
-    const union {
-        long one;
-        char little;
-    } is_endian = { 1 };
+    DECLARE_IS_ENDIAN;
 
-    if (is_endian.little)
+    if (IS_LITTLE_ENDIAN)
         b->word[i] = byteswap8(x);
     else
         b->word[i] = x;
@@ -99,7 +94,7 @@ __owur static ossl_inline int siv128_do_s2v_p(SIV128_CONTEXT *ctx, SIV_BLOCK *ou
     EVP_MAC_CTX *mac_ctx;
     int ret = 0;
 
-    mac_ctx = EVP_MAC_dup_ctx(ctx->mac_ctx_init);
+    mac_ctx = EVP_MAC_CTX_dup(ctx->mac_ctx_init);
     if (mac_ctx == NULL)
         return 0;
 
@@ -126,7 +121,7 @@ __owur static ossl_inline int siv128_do_s2v_p(SIV128_CONTEXT *ctx, SIV_BLOCK *ou
     ret = 1;
 
 err:
-    EVP_MAC_free_ctx(mac_ctx);
+    EVP_MAC_CTX_free(mac_ctx);
     return ret;
 }
 
@@ -187,20 +182,20 @@ int CRYPTO_siv128_init(SIV128_CONTEXT *ctx, const unsigned char *key, int klen,
             /* TODO(3.0) library context */
             || (ctx->mac =
                 EVP_MAC_fetch(NULL, OSSL_MAC_NAME_CMAC, NULL)) == NULL
-            || (ctx->mac_ctx_init = EVP_MAC_new_ctx(ctx->mac)) == NULL
-            || !EVP_MAC_set_ctx_params(ctx->mac_ctx_init, params)
+            || (ctx->mac_ctx_init = EVP_MAC_CTX_new(ctx->mac)) == NULL
+            || !EVP_MAC_CTX_set_params(ctx->mac_ctx_init, params)
             || !EVP_EncryptInit_ex(ctx->cipher_ctx, ctr, NULL, key + klen, NULL)
-            || (mac_ctx = EVP_MAC_dup_ctx(ctx->mac_ctx_init)) == NULL
+            || (mac_ctx = EVP_MAC_CTX_dup(ctx->mac_ctx_init)) == NULL
             || !EVP_MAC_update(mac_ctx, zero, sizeof(zero))
             || !EVP_MAC_final(mac_ctx, ctx->d.byte, &out_len,
                               sizeof(ctx->d.byte))) {
         EVP_CIPHER_CTX_free(ctx->cipher_ctx);
-        EVP_MAC_free_ctx(ctx->mac_ctx_init);
-        EVP_MAC_free_ctx(mac_ctx);
+        EVP_MAC_CTX_free(ctx->mac_ctx_init);
+        EVP_MAC_CTX_free(mac_ctx);
         EVP_MAC_free(ctx->mac);
         return 0;
     }
-    EVP_MAC_free_ctx(mac_ctx);
+    EVP_MAC_CTX_free(mac_ctx);
 
     ctx->final_ret = -1;
     ctx->crypto_ok = 1;
@@ -216,8 +211,8 @@ int CRYPTO_siv128_copy_ctx(SIV128_CONTEXT *dest, SIV128_CONTEXT *src)
     memcpy(&dest->d, &src->d, sizeof(src->d));
     if (!EVP_CIPHER_CTX_copy(dest->cipher_ctx, src->cipher_ctx))
         return 0;
-    EVP_MAC_free_ctx(dest->mac_ctx_init);
-    dest->mac_ctx_init = EVP_MAC_dup_ctx(src->mac_ctx_init);
+    EVP_MAC_CTX_free(dest->mac_ctx_init);
+    dest->mac_ctx_init = EVP_MAC_CTX_dup(src->mac_ctx_init);
     if (dest->mac_ctx_init == NULL)
         return 0;
     return 1;
@@ -237,15 +232,15 @@ int CRYPTO_siv128_aad(SIV128_CONTEXT *ctx, const unsigned char *aad,
 
     siv128_dbl(&ctx->d);
 
-    if ((mac_ctx = EVP_MAC_dup_ctx(ctx->mac_ctx_init)) == NULL
+    if ((mac_ctx = EVP_MAC_CTX_dup(ctx->mac_ctx_init)) == NULL
         || !EVP_MAC_update(mac_ctx, aad, len)
         || !EVP_MAC_final(mac_ctx, mac_out.byte, &out_len,
                           sizeof(mac_out.byte))
         || out_len != SIV_LEN) {
-        EVP_MAC_free_ctx(mac_ctx);
+        EVP_MAC_CTX_free(mac_ctx);
         return 0;
     }
-    EVP_MAC_free_ctx(mac_ctx);
+    EVP_MAC_CTX_free(mac_ctx);
 
     siv128_xorblock(&ctx->d, &mac_out);
 
@@ -357,7 +352,7 @@ int CRYPTO_siv128_cleanup(SIV128_CONTEXT *ctx)
     if (ctx != NULL) {
         EVP_CIPHER_CTX_free(ctx->cipher_ctx);
         ctx->cipher_ctx = NULL;
-        EVP_MAC_free_ctx(ctx->mac_ctx_init);
+        EVP_MAC_CTX_free(ctx->mac_ctx_init);
         ctx->mac_ctx_init = NULL;
         EVP_MAC_free(ctx->mac);
         ctx->mac = NULL;

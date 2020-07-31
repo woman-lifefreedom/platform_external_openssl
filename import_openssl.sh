@@ -516,9 +516,6 @@ function import() {
   generate_build_config_mk
   generate_opensslconf_h
 
-  cp -f LICENSE ../NOTICE
-  touch ../MODULE_LICENSE_BSD_LIKE
-
   # Avoid checking in symlinks
   for i in `find include/openssl -type l`; do
     target=`readlink $i`

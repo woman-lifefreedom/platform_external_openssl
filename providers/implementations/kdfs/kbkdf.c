@@ -37,6 +37,7 @@
 #include "internal/cryptlib.h"
 #include "crypto/evp.h"
 #include "internal/numbers.h"
+#include "internal/endian.h"
 #include "prov/implementations.h"
 #include "prov/provider_ctx.h"
 #include "prov/provider_util.h"
@@ -80,12 +81,9 @@ static OSSL_FUNC_kdf_set_ctx_params_fn kbkdf_set_ctx_params;
 static uint32_t be32(uint32_t host)
 {
     uint32_t big = 0;
-    const union {
-        long one;
-        char little;
-    } is_endian = { 1 };
+    DECLARE_IS_ENDIAN;
 
-    if (!is_endian.little)
+    if (!IS_LITTLE_ENDIAN)
         return host;
 
     big |= (host & 0xff000000) >> 24;
@@ -122,13 +120,15 @@ static void kbkdf_free(void *vctx)
 static void kbkdf_reset(void *vctx)
 {
     KBKDF *ctx = (KBKDF *)vctx;
+    void *provctx = ctx->provctx;
 
-    EVP_MAC_free_ctx(ctx->ctx_init);
+    EVP_MAC_CTX_free(ctx->ctx_init);
     OPENSSL_clear_free(ctx->context, ctx->context_len);
     OPENSSL_clear_free(ctx->label, ctx->label_len);
     OPENSSL_clear_free(ctx->ki, ctx->ki_len);
     OPENSSL_clear_free(ctx->iv, ctx->iv_len);
     memset(ctx, 0, sizeof(*ctx));
+    ctx->provctx = provctx;
 }
 
 /* SP800-108 section 5.1 or section 5.2 depending on mode. */
@@ -151,7 +151,7 @@ static int derive(EVP_MAC_CTX *ctx_init, kbkdf_mode mode, unsigned char *iv,
     for (counter = 1; written < ko_len; counter++) {
         i = be32(counter);
 
-        ctx = EVP_MAC_dup_ctx(ctx_init);
+        ctx = EVP_MAC_CTX_dup(ctx_init);
         if (ctx == NULL)
             goto done;
 
@@ -172,13 +172,13 @@ static int derive(EVP_MAC_CTX *ctx_init, kbkdf_mode mode, unsigned char *iv,
         written += h;
 
         k_i_len = h;
-        EVP_MAC_free_ctx(ctx);
+        EVP_MAC_CTX_free(ctx);
         ctx = NULL;
     }
 
     ret = 1;
 done:
-    EVP_MAC_free_ctx(ctx);
+    EVP_MAC_CTX_free(ctx);
     return ret;
 }
 
@@ -247,9 +247,9 @@ static int kbkdf_set_ctx_params(void *vctx, const OSSL_PARAM params[])
                                            NULL, NULL, libctx))
         return 0;
     else if (ctx->ctx_init != NULL
-             && !EVP_MAC_is_a(EVP_MAC_get_ctx_mac(ctx->ctx_init),
+             && !EVP_MAC_is_a(EVP_MAC_CTX_mac(ctx->ctx_init),
                               OSSL_MAC_NAME_HMAC)
-             && !EVP_MAC_is_a(EVP_MAC_get_ctx_mac(ctx->ctx_init),
+             && !EVP_MAC_is_a(EVP_MAC_CTX_mac(ctx->ctx_init),
                               OSSL_MAC_NAME_CMAC)) {
         ERR_raise(ERR_LIB_PROV, PROV_R_INVALID_MAC);
         return 0;
@@ -288,7 +288,7 @@ static int kbkdf_set_ctx_params(void *vctx, const OSSL_PARAM params[])
                                                        ctx->ki, ctx->ki_len);
         mparams[1] = OSSL_PARAM_construct_end();
 
-        if (!EVP_MAC_set_ctx_params(ctx->ctx_init, mparams)
+        if (!EVP_MAC_CTX_set_params(ctx->ctx_init, mparams)
             || !EVP_MAC_init(ctx->ctx_init))
             return 0;
     }

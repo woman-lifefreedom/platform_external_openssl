@@ -765,6 +765,8 @@ set(provider_srcs
         providers/common/nid_to_name.c
         providers/defltprov.c
         providers/implementations/asymciphers/rsa_enc.c
+        providers/implementations/ciphers/cipher_aes_cts_fips.c
+        providers/implementations/ciphers/ciphercommon_block.c
         providers/implementations/exchange/ecx_exch.c
         providers/implementations/exchange/ecdh_exch.c
         providers/implementations/exchange/dh_exch.c
@@ -1000,6 +1002,7 @@ set(ssl_srcs
         ssl/record/ssl3_buffer.c
         ssl/record/ssl3_record.c
         ssl/record/ssl3_record_tls13.c
+        ssl/record/tls_pad.c
         ssl/s3_cbc.c
         ssl/s3_enc.c
         ssl/s3_lib.c

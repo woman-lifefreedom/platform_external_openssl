@@ -7,6 +7,9 @@
  * https://www.openssl.org/source/license.html
  */
 
+/* We need to use some engine deprecated APIs */
+#define OPENSSL_SUPPRESS_DEPRECATED
+
 #include "e_os.h"
 #include <string.h>
 #include <sys/stat.h>
@@ -1545,8 +1548,10 @@ static OSSL_STORE_INFO *file_load(OSSL_STORE_LOADER_CTX *ctx,
         } while (matchcount == 0 && !file_eof(ctx) && !file_error(ctx));
 
         /* We bail out on ambiguity */
-        if (matchcount > 1)
+        if (matchcount > 1) {
+            OSSL_STORE_INFO_free(result);
             return NULL;
+        }
 
         if (result != NULL
             && ctx->expected_type != 0

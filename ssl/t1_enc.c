@@ -49,7 +49,7 @@ static int tls1_PRF(SSL *s,
     kdf = EVP_KDF_fetch(s->ctx->libctx, OSSL_KDF_NAME_TLS1_PRF, s->ctx->propq);
     if (kdf == NULL)
         goto err;
-    kctx = EVP_KDF_new_ctx(kdf);
+    kctx = EVP_KDF_CTX_new(kdf);
     EVP_KDF_free(kdf);
     if (kctx == NULL)
         goto err;
@@ -70,9 +70,9 @@ static int tls1_PRF(SSL *s,
     *p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SEED,
                                              (void *)seed5, (size_t)seed5_len);
     *p = OSSL_PARAM_construct_end();
-    if (EVP_KDF_set_ctx_params(kctx, params)
+    if (EVP_KDF_CTX_set_params(kctx, params)
             && EVP_KDF_derive(kctx, out, olen)) {
-        EVP_KDF_free_ctx(kctx);
+        EVP_KDF_CTX_free(kctx);
         return 1;
     }
 
@@ -82,7 +82,7 @@ static int tls1_PRF(SSL *s,
                  ERR_R_INTERNAL_ERROR);
     else
         SSLerr(SSL_F_TLS1_PRF, ERR_R_INTERNAL_ERROR);
-    EVP_KDF_free_ctx(kctx);
+    EVP_KDF_CTX_free(kctx);
     return 0;
 }
 
@@ -135,6 +135,45 @@ static int count_unprocessed_records(SSL *s)
 }
 # endif
 #endif
+
+
+int tls_provider_set_tls_params(SSL *s, EVP_CIPHER_CTX *ctx,
+                                const EVP_CIPHER *ciph,
+                                const EVP_MD *md)
+{
+    /*
+     * Provided cipher, the TLS padding/MAC removal is performed provider
+     * side so we need to tell the ctx about our TLS version and mac size
+     */
+    OSSL_PARAM params[3], *pprm = params;
+    size_t macsize = 0;
+    int imacsize = -1;
+
+    if ((EVP_CIPHER_flags(ciph) & EVP_CIPH_FLAG_AEAD_CIPHER) == 0
+               /*
+                * We look at s->ext.use_etm instead of SSL_READ_ETM() or
+                * SSL_WRITE_ETM() because this test applies to both reading
+                * and writing.
+                */
+            && !s->ext.use_etm)
+        imacsize = EVP_MD_size(md);
+    if (imacsize >= 0)
+        macsize = (size_t)imacsize;
+
+    *pprm++ = OSSL_PARAM_construct_int(OSSL_CIPHER_PARAM_TLS_VERSION,
+                                       &s->version);
+    *pprm++ = OSSL_PARAM_construct_size_t(OSSL_CIPHER_PARAM_TLS_MAC_SIZE,
+                                          &macsize);
+    *pprm = OSSL_PARAM_construct_end();
+
+    if (!EVP_CIPHER_CTX_set_params(ctx, params)) {
+        SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS1_CHANGE_CIPHER_STATE,
+                 ERR_R_INTERNAL_ERROR);
+        return 0;
+    }
+
+    return 1;
+}
 
 int tls1_change_cipher_state(SSL *s, int which)
 {
@@ -396,6 +435,12 @@ int tls1_change_cipher_state(SSL *s, int which)
                  ERR_R_INTERNAL_ERROR);
         goto err;
     }
+    if (EVP_CIPHER_provider(c) != NULL
+            && !tls_provider_set_tls_params(s, dd, c, m)) {
+        /* SSLfatal already called */
+        goto err;
+    }
+
 #ifndef OPENSSL_NO_KTLS
     if (s->compress)
         goto skip_ktls;
