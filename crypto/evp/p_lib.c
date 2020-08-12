@@ -34,6 +34,7 @@
 
 #include "crypto/asn1.h"
 #include "crypto/evp.h"
+#include "crypto/ecx.h"
 #include "internal/evp.h"
 #include "internal/provider.h"
 #include "evp_local.h"
@@ -219,23 +220,22 @@ static int evp_pkey_cmp_any(const EVP_PKEY *a, const EVP_PKEY *b,
     void *keydata1 = NULL, *keydata2 = NULL, *tmp_keydata = NULL;
 
     /* If none of them are provided, this function shouldn't have been called */
-    if (!ossl_assert(a->keymgmt != NULL || b->keymgmt != NULL))
+    if (!ossl_assert(evp_pkey_is_provided(a) || evp_pkey_is_provided(b)))
         return -2;
 
     /* For purely provided keys, we just call the keymgmt utility */
-    if (a->keymgmt != NULL && b->keymgmt != NULL)
+    if (evp_pkey_is_provided(a) && evp_pkey_is_provided(b))
         return evp_keymgmt_util_match((EVP_PKEY *)a, (EVP_PKEY *)b, selection);
 
     /*
      * At this point, one of them is provided, the other not.  This allows
      * us to compare types using legacy NIDs.
      */
-    if ((a->type != EVP_PKEY_NONE
-         && (b->keymgmt == NULL
-             || !EVP_KEYMGMT_is_a(b->keymgmt, OBJ_nid2sn(a->type))))
-        || (b->type != EVP_PKEY_NONE
-            && (a->keymgmt == NULL
-                || !EVP_KEYMGMT_is_a(a->keymgmt, OBJ_nid2sn(b->type)))))
+    if (evp_pkey_is_legacy(a)
+        && !EVP_KEYMGMT_is_a(b->keymgmt, OBJ_nid2sn(a->type)))
+        return -1;               /* not the same key type */
+    if (evp_pkey_is_legacy(b)
+        && !EVP_KEYMGMT_is_a(a->keymgmt, OBJ_nid2sn(b->type)))
         return -1;               /* not the same key type */
 
     /*
@@ -856,6 +856,54 @@ EC_KEY *EVP_PKEY_get1_EC_KEY(EVP_PKEY *pkey)
         EC_KEY_up_ref(ret);
     return ret;
 }
+
+static int EVP_PKEY_set1_ECX_KEY(EVP_PKEY *pkey, int type, ECX_KEY *key)
+{
+    int ret = EVP_PKEY_assign(pkey, type, key);
+    if (ret)
+        ecx_key_up_ref(key);
+    return ret;
+}
+
+static ECX_KEY *EVP_PKEY_get0_ECX_KEY(const EVP_PKEY *pkey, int type)
+{
+    if (!evp_pkey_downgrade((EVP_PKEY *)pkey)) {
+        ERR_raise(ERR_LIB_EVP, EVP_R_INACCESSIBLE_KEY);
+        return NULL;
+    }
+    if (EVP_PKEY_base_id(pkey) != type) {
+        ERR_raise(ERR_LIB_EVP, EVP_R_EXPECTING_A_ECX_KEY);
+        return NULL;
+    }
+    return pkey->pkey.ecx;
+}
+
+static ECX_KEY *EVP_PKEY_get1_ECX_KEY(EVP_PKEY *pkey, int type)
+{
+    ECX_KEY *ret = EVP_PKEY_get0_ECX_KEY(pkey, type);
+    if (ret != NULL)
+        ecx_key_up_ref(ret);
+    return ret;
+}
+
+#  define IMPLEMENT_ECX_VARIANT(NAME)                                   \
+    int EVP_PKEY_set1_##NAME(EVP_PKEY *pkey, ECX_KEY *key)              \
+    {                                                                   \
+        return EVP_PKEY_set1_ECX_KEY(pkey, EVP_PKEY_##NAME, key);       \
+    }                                                                   \
+    ECX_KEY *EVP_PKEY_get0_##NAME(const EVP_PKEY *pkey)                 \
+    {                                                                   \
+        return EVP_PKEY_get0_ECX_KEY(pkey, EVP_PKEY_##NAME);            \
+    }                                                                   \
+    ECX_KEY *EVP_PKEY_get1_##NAME(EVP_PKEY *pkey)                       \
+    {                                                                   \
+        return EVP_PKEY_get1_ECX_KEY(pkey, EVP_PKEY_##NAME);            \
+    }
+IMPLEMENT_ECX_VARIANT(X25519)
+IMPLEMENT_ECX_VARIANT(X448)
+IMPLEMENT_ECX_VARIANT(ED25519)
+IMPLEMENT_ECX_VARIANT(ED448)
+
 # endif
 
 # ifndef OPENSSL_NO_DH
@@ -936,9 +984,23 @@ int EVP_PKEY_is_a(const EVP_PKEY *pkey, const char *name)
 
         if (strcasecmp(name, "RSA") == 0)
             type = EVP_PKEY_RSA;
+        else if (strcasecmp(name, "RSA-PSS") == 0)
+            type = EVP_PKEY_RSA_PSS;
 #ifndef OPENSSL_NO_EC
         else if (strcasecmp(name, "EC") == 0)
             type = EVP_PKEY_EC;
+        else if (strcasecmp(name, "ED25519") == 0)
+            type = EVP_PKEY_ED25519;
+        else if (strcasecmp(name, "ED448") == 0)
+            type = EVP_PKEY_ED448;
+        else if (strcasecmp(name, "X25519") == 0)
+            type = EVP_PKEY_X25519;
+        else if (strcasecmp(name, "X448") == 0)
+            type = EVP_PKEY_X448;
+#endif
+#ifndef OPENSSL_NO_DH
+        else if (strcasecmp(name, "DH") == 0)
+            type = EVP_PKEY_DH;
 #endif
 #ifndef OPENSSL_NO_DSA
         else if (strcasecmp(name, "DSA") == 0)
@@ -1803,15 +1865,13 @@ int evp_pkey_downgrade(EVP_PKEY *pk)
      * of the key data, typically the private bits.  In this case, we restore
      * the provider side internal "origin" and leave it at that.
      */
-    if (!ossl_assert(EVP_PKEY_set_type_by_keymgmt(pk, keymgmt))) {
+    if (!ossl_assert(evp_keymgmt_util_assign_pkey(pk, keymgmt, keydata))) {
         /* This should not be impossible */
         ERR_raise(ERR_LIB_EVP, ERR_R_INTERNAL_ERROR);
         return 0;
     }
-    /* EVP_PKEY_set_type_by_keymgmt() increased the refcount... */
+    /* evp_keymgmt_util_assign_pkey() increased the refcount... */
     EVP_KEYMGMT_free(keymgmt);
-    pk->keydata = keydata;
-    evp_keymgmt_util_cache_keyinfo(pk);
     return 0;     /* No downgrade, but at least the key is restored */
 }
 #endif  /* FIPS_MODULE */

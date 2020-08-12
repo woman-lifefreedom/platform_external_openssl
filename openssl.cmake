@@ -40,6 +40,7 @@ set(crypto_srcs
         crypto/asn1/asn_pack.c
         crypto/asn1/bio_asn1.c
         crypto/asn1/bio_ndef.c
+        crypto/asn1/d2i_param.c
         crypto/asn1/d2i_pr.c
         crypto/asn1/d2i_pu.c
         crypto/asn1/evp_asn1.c
@@ -524,6 +525,11 @@ set(crypto_srcs
         crypto/rsa/rsa_x931.c
         crypto/rsa/rsa_x931g.c
         crypto/self_test_core.c
+        crypto/serializer/deserializer_err.c
+        crypto/serializer/deserializer_lib.c
+        crypto/serializer/deserializer_meth.c
+        crypto/serializer/deserializer_pkey.c
+        crypto/serializer/serdes_pass.c
         crypto/serializer/serializer_err.c
         crypto/serializer/serializer_lib.c
         crypto/serializer/serializer_meth.c
@@ -759,10 +765,12 @@ set(provider_srcs
         providers/common/der/der_rsa_gen.c
         providers/common/der/der_rsa_key.c
         providers/common/der/der_rsa_sig.c
+        providers/common/der/der_wrap_gen.c
         providers/common/provider_ctx.c
         providers/common/provider_util.c
         providers/common/provider_err.c
         providers/common/nid_to_name.c
+        providers/baseprov.c
         providers/defltprov.c
         providers/implementations/asymciphers/rsa_enc.c
         providers/implementations/ciphers/cipher_aes_cts_fips.c
@@ -770,6 +778,9 @@ set(provider_srcs
         providers/implementations/exchange/ecx_exch.c
         providers/implementations/exchange/ecdh_exch.c
         providers/implementations/exchange/dh_exch.c
+        providers/implementations/serializers/deserialize_common.c
+        providers/implementations/serializers/deserialize_der2key.c
+        providers/implementations/serializers/deserialize_pem2der.c
         providers/implementations/signature/dsa.c
         providers/implementations/signature/rsa.c
         providers/implementations/signature/eddsa.c

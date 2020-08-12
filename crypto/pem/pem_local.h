@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2020 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -45,7 +45,7 @@
                 && !OSSL_SERIALIZER_CTX_set_passphrase(ctx, kstr, klen)) \
                 ret = 0;                                                \
             else if (cb != NULL                                         \
-                     && !OSSL_SERIALIZER_CTX_set_passphrase_cb(ctx, 1,  \
+                     && !OSSL_SERIALIZER_CTX_set_passphrase_cb(ctx,     \
                                                                cb, u))  \
                 ret = 0;                                                \
         }                                                               \

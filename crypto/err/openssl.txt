@@ -875,6 +875,7 @@ EVP_F_EVP_PKEY_ENCRYPT_INIT:139:EVP_PKEY_encrypt_init
 EVP_F_EVP_PKEY_ENCRYPT_OLD:152:EVP_PKEY_encrypt_old
 EVP_F_EVP_PKEY_GET0_DH:119:EVP_PKEY_get0_DH
 EVP_F_EVP_PKEY_GET0_DSA:120:EVP_PKEY_get0_DSA
+EVP_F_EVP_PKEY_GET0_ECX_KEY:222:
 EVP_F_EVP_PKEY_GET0_EC_KEY:131:EVP_PKEY_get0_EC_KEY
 EVP_F_EVP_PKEY_GET0_HMAC:183:EVP_PKEY_get0_hmac
 EVP_F_EVP_PKEY_GET0_POLY1305:184:EVP_PKEY_get0_poly1305
@@ -2098,13 +2099,10 @@ CMP_R_ENCOUNTERED_WAITING:162:encountered waiting
 CMP_R_ERROR_CALCULATING_PROTECTION:115:error calculating protection
 CMP_R_ERROR_CREATING_CERTCONF:116:error creating certconf
 CMP_R_ERROR_CREATING_CERTREP:117:error creating certrep
-CMP_R_ERROR_CREATING_CR:163:error creating cr
+CMP_R_ERROR_CREATING_CERTREQ:163:error creating certreq
 CMP_R_ERROR_CREATING_ERROR:118:error creating error
 CMP_R_ERROR_CREATING_GENM:119:error creating genm
 CMP_R_ERROR_CREATING_GENP:120:error creating genp
-CMP_R_ERROR_CREATING_IR:164:error creating ir
-CMP_R_ERROR_CREATING_KUR:165:error creating kur
-CMP_R_ERROR_CREATING_P10CR:121:error creating p10cr
 CMP_R_ERROR_CREATING_PKICONF:122:error creating pkiconf
 CMP_R_ERROR_CREATING_POLLREP:123:error creating pollrep
 CMP_R_ERROR_CREATING_POLLREQ:124:error creating pollreq
@@ -2125,6 +2123,7 @@ CMP_R_INVALID_OPTION:174:invalid option
 CMP_R_MISSING_KEY_INPUT_FOR_CREATING_PROTECTION:130:\
 	missing key input for creating protection
 CMP_R_MISSING_KEY_USAGE_DIGITALSIGNATURE:142:missing key usage digitalsignature
+CMP_R_MISSING_P10CSR:121:missing p10csr
 CMP_R_MISSING_PRIVATE_KEY:131:missing private key
 CMP_R_MISSING_PROTECTION:143:missing protection
 CMP_R_MISSING_REFERENCE_CERT:168:missing reference cert
@@ -2534,6 +2533,7 @@ EVP_R_EXPECTING_AN_HMAC_KEY:174:expecting an hmac key
 EVP_R_EXPECTING_AN_RSA_KEY:127:expecting an rsa key
 EVP_R_EXPECTING_A_DH_KEY:128:expecting a dh key
 EVP_R_EXPECTING_A_DSA_KEY:129:expecting a dsa key
+EVP_R_EXPECTING_A_ECX_KEY:219:expecting a ecx key
 EVP_R_EXPECTING_A_EC_KEY:142:expecting a ec key
 EVP_R_EXPECTING_A_POLY1305_KEY:164:expecting a poly1305 key
 EVP_R_EXPECTING_A_SIPHASH_KEY:175:expecting a siphash key
@@ -2668,6 +2668,7 @@ KDF_R_VALUE_MISSING:102:value missing
 KDF_R_WRONG_OUTPUT_BUFFER_SIZE:112:wrong output buffer size
 OBJ_R_OID_EXISTS:102:oid exists
 OBJ_R_UNKNOWN_NID:101:unknown nid
+OBJ_R_UNKNOWN_OBJECT_NAME:103:unknown object name
 OCSP_R_CERTIFICATE_VERIFY_ERROR:101:certificate verify error
 OCSP_R_DIGEST_ERR:102:digest err
 OCSP_R_ERROR_IN_NEXTUPDATE_FIELD:122:error in nextupdate field
@@ -2693,6 +2694,7 @@ OCSP_R_STATUS_TOO_OLD:127:status too old
 OCSP_R_UNKNOWN_MESSAGE_DIGEST:119:unknown message digest
 OCSP_R_UNKNOWN_NID:120:unknown nid
 OCSP_R_UNSUPPORTED_REQUESTORNAME_TYPE:129:unsupported requestorname type
+OSSL_DESERIALIZER_R_MISSING_GET_PARAMS:100:missing get params
 OSSL_SERIALIZER_R_INCORRECT_PROPERTY_QUERY:100:incorrect property query
 OSSL_SERIALIZER_R_SERIALIZER_NOT_FOUND:101:serializer not found
 OSSL_STORE_R_AMBIGUOUS_CONTENT_TYPE:107:ambiguous content type
@@ -2854,8 +2856,10 @@ PROV_R_GENERATE_ERROR:191:generate error
 PROV_R_ILLEGAL_OR_UNSUPPORTED_PADDING_MODE:165:\
 	illegal or unsupported padding mode
 PROV_R_INAVLID_UKM_LENGTH:146:inavlid ukm length
+PROV_R_INDICATOR_INTEGRITY_FAILURE:210:indicator integrity failure
 PROV_R_INSUFFICIENT_DRBG_STRENGTH:181:insufficient drbg strength
 PROV_R_INVALID_AAD:108:invalid aad
+PROV_R_INVALID_CONFIG_DATA:211:invalid config data
 PROV_R_INVALID_CONSTANT_LENGTH:157:invalid constant length
 PROV_R_INVALID_CURVE:176:invalid curve
 PROV_R_INVALID_CUSTOM_LENGTH:111:invalid custom length
@@ -2875,9 +2879,11 @@ PROV_R_INVALID_MODE:125:invalid mode
 PROV_R_INVALID_MODE_INT:126:invalid mode int
 PROV_R_INVALID_PADDING_MODE:168:invalid padding mode
 PROV_R_INVALID_PSS_SALTLEN:169:invalid pss saltlen
+PROV_R_INVALID_RSA_KEY:217:invalid rsa key
 PROV_R_INVALID_SALT_LENGTH:112:invalid salt length
 PROV_R_INVALID_SEED_LENGTH:154:invalid seed length
 PROV_R_INVALID_SIGNATURE_SIZE:179:invalid signature size
+PROV_R_INVALID_STATE:212:invalid state
 PROV_R_INVALID_TAG:110:invalid tag
 PROV_R_INVALID_TAGLEN:118:invalid taglen
 PROV_R_INVALID_X931_DIGEST:170:invalid x931 digest
@@ -2885,6 +2891,7 @@ PROV_R_IN_ERROR_STATE:192:in error state
 PROV_R_KEY_SIZE_TOO_SMALL:171:key size too small
 PROV_R_MISSING_CEK_ALG:144:missing cek alg
 PROV_R_MISSING_CIPHER:155:missing cipher
+PROV_R_MISSING_CONFIG_DATA:213:missing config data
 PROV_R_MISSING_CONSTANT:156:missing constant
 PROV_R_MISSING_KEY:128:missing key
 PROV_R_MISSING_MAC:150:missing mac
@@ -2897,6 +2904,7 @@ PROV_R_MISSING_SEED:140:missing seed
 PROV_R_MISSING_SESSION_ID:133:missing session id
 PROV_R_MISSING_TYPE:134:missing type
 PROV_R_MISSING_XCGHASH:135:missing xcghash
+PROV_R_MODULE_INTEGRITY_FAILURE:214:module integrity failure
 PROV_R_NOT_INSTANTIATED:193:not instantiated
 PROV_R_NOT_SUPPORTED:136:not supported
 PROV_R_NOT_XOF_OR_INVALID_LENGTH:113:not xof or invalid length
@@ -2913,6 +2921,8 @@ PROV_R_READ_KEY:159:read key
 PROV_R_REQUEST_TOO_LARGE_FOR_DRBG:196:request too large for drbg
 PROV_R_REQUIRE_CTR_MODE_CIPHER:206:require ctr mode cipher
 PROV_R_RESEED_ERROR:197:reseed error
+PROV_R_SELF_TEST_KAT_FAILURE:215:self test kat failure
+PROV_R_SELF_TEST_POST_FAILURE:216:self test post failure
 PROV_R_TAG_NOTSET:119:tag notset
 PROV_R_TAG_NOT_NEEDED:120:tag not needed
 PROV_R_UNABLE_TO_FIND_CIPHERS:207:unable to find ciphers
@@ -3461,7 +3471,7 @@ X509V3_R_INVALID_IPADDRESS:166:invalid ipaddress
 X509V3_R_INVALID_MULTIPLE_RDNS:161:invalid multiple rdns
 X509V3_R_INVALID_NAME:106:invalid name
 X509V3_R_INVALID_NULL_ARGUMENT:107:invalid null argument
-X509V3_R_INVALID_NULL_NAME:108:invalid null name
+X509V3_R_INVALID_EMPTY_NAME:108:invalid empty name
 X509V3_R_INVALID_NULL_VALUE:109:invalid null value
 X509V3_R_INVALID_NUMBER:140:invalid number
 X509V3_R_INVALID_NUMBERS:141:invalid numbers

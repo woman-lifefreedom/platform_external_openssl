@@ -260,8 +260,8 @@ function generate_build_config_headers() {
   make include/openssl/opensslv.h
   make include/crypto/bn_conf.h
   make include/crypto/dso_conf.h
-  make providers/common/include/prov/der_ec.h providers/common/include/prov/der_dsa.h providers/common/include/prov/der_rsa.h providers/common/include/prov/der_digests.h
-  make providers/common/der/der_digests_gen.c providers/common/der/der_ec_gen.c providers/common/der/der_dsa_gen.c providers/common/der/der_rsa_gen.c
+  make providers/common/include/prov/der_ec.h providers/common/include/prov/der_dsa.h providers/common/include/prov/der_rsa.h providers/common/include/prov/der_digests.h providers/common/include/prov/der_wrap.h
+  make providers/common/der/der_digests_gen.c providers/common/der/der_ec_gen.c providers/common/der/der_dsa_gen.c providers/common/der/der_rsa_gen.c providers/common/der/der_wrap_gen.c
 
   rm -f apps/CA.pl.bak openssl/opensslconf.h.bak
   mv -f include/crypto/bn_conf.h include/crypto/bn_conf-$outname.h

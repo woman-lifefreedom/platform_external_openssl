@@ -955,11 +955,40 @@ int SSL_set_trust(SSL *s, int trust)
 
 int SSL_set1_host(SSL *s, const char *hostname)
 {
+    /* If a hostname is provided and parses as an IP address,
+     * treat it as such. */
+    if (hostname && X509_VERIFY_PARAM_set1_ip_asc(s->param, hostname) == 1)
+        return 1;
+
     return X509_VERIFY_PARAM_set1_host(s->param, hostname, 0);
 }
 
 int SSL_add1_host(SSL *s, const char *hostname)
 {
+    /* If a hostname is provided and parses as an IP address,
+     * treat it as such. */
+    if (hostname)
+    {
+        ASN1_OCTET_STRING *ip;
+        char *old_ip;
+
+        ip = a2i_IPADDRESS(hostname);
+        if (ip) {
+            /* We didn't want it; only to check if it *is* an IP address */
+            ASN1_OCTET_STRING_free(ip);
+
+            old_ip = X509_VERIFY_PARAM_get1_ip_asc(s->param);
+            if (old_ip)
+            {
+                free(old_ip);
+                /* There can be only one IP address */
+                return 0;
+            }
+
+            return X509_VERIFY_PARAM_set1_ip_asc(s->param, hostname);
+        }
+    }
+
     return X509_VERIFY_PARAM_add1_host(s->param, hostname, 0);
 }
 
@@ -4254,7 +4283,8 @@ SSL_CTX *SSL_set_SSL_CTX(SSL *ssl, SSL_CTX *ctx)
 
 int SSL_CTX_set_default_verify_paths(SSL_CTX *ctx)
 {
-    return X509_STORE_set_default_paths(ctx->cert_store);
+    return X509_STORE_set_default_paths_with_libctx(ctx->cert_store,
+                                                    ctx->libctx, ctx->propq);
 }
 
 int SSL_CTX_set_default_verify_dir(SSL_CTX *ctx)
@@ -4286,7 +4316,8 @@ int SSL_CTX_set_default_verify_file(SSL_CTX *ctx)
     /* We ignore errors, in case the directory doesn't exist */
     ERR_set_mark();
 
-    X509_LOOKUP_load_file(lookup, NULL, X509_FILETYPE_DEFAULT);
+    X509_LOOKUP_load_file_with_libctx(lookup, NULL, X509_FILETYPE_DEFAULT,
+                                      ctx->libctx, ctx->propq);
 
     ERR_pop_to_mark();
 
@@ -4304,7 +4335,7 @@ int SSL_CTX_set_default_verify_store(SSL_CTX *ctx)
     /* We ignore errors, in case the directory doesn't exist */
     ERR_set_mark();
 
-    X509_LOOKUP_add_store(lookup, NULL);
+    X509_LOOKUP_add_store_with_libctx(lookup, NULL, ctx->libctx, ctx->propq);
 
     ERR_pop_to_mark();
 
@@ -4313,7 +4344,8 @@ int SSL_CTX_set_default_verify_store(SSL_CTX *ctx)
 
 int SSL_CTX_load_verify_file(SSL_CTX *ctx, const char *CAfile)
 {
-    return X509_STORE_load_file(ctx->cert_store, CAfile);
+    return X509_STORE_load_file_with_libctx(ctx->cert_store, CAfile,
+                                            ctx->libctx, ctx->propq);
 }
 
 int SSL_CTX_load_verify_dir(SSL_CTX *ctx, const char *CApath)
@@ -4323,7 +4355,8 @@ int SSL_CTX_load_verify_dir(SSL_CTX *ctx, const char *CApath)
 
 int SSL_CTX_load_verify_store(SSL_CTX *ctx, const char *CAstore)
 {
-    return X509_STORE_load_store(ctx->cert_store, CAstore);
+    return X509_STORE_load_store_with_libctx(ctx->cert_store, CAstore,
+                                             ctx->libctx, ctx->propq);
 }
 
 int SSL_CTX_load_verify_locations(SSL_CTX *ctx, const char *CAfile,
