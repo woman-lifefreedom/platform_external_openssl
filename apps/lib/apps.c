@@ -7,9 +7,6 @@
  * https://www.openssl.org/source/license.html
  */
 
-/* We need to use some engine deprecated APIs */
-#define OPENSSL_SUPPRESS_DEPRECATED
-
 #if !defined(_POSIX_C_SOURCE) && defined(OPENSSL_SYS_VMS)
 /*
  * On VMS, you need to define this to get the declaration of fileno().  The
@@ -36,9 +33,6 @@
 #include <openssl/pkcs12.h>
 #include <openssl/ui.h>
 #include <openssl/safestack.h>
-#ifndef OPENSSL_NO_ENGINE
-# include <openssl/engine.h>
-#endif
 #ifndef OPENSSL_NO_RSA
 # include <openssl/rsa.h>
 #endif
@@ -62,15 +56,6 @@ static int WIN32_rename(const char *from, const char *to);
 #define PASS_SOURCE_SIZE_MAX 4
 
 DEFINE_STACK_OF(CONF)
-DEFINE_STACK_OF(CONF_VALUE)
-DEFINE_STACK_OF(X509)
-DEFINE_STACK_OF(X509_CRL)
-DEFINE_STACK_OF(X509_INFO)
-DEFINE_STACK_OF(X509_EXTENSION)
-DEFINE_STACK_OF(X509_POLICY_NODE)
-DEFINE_STACK_OF(GENERAL_NAME)
-DEFINE_STACK_OF(DIST_POINT)
-DEFINE_STACK_OF_STRING()
 
 typedef struct {
     const char *name;
@@ -78,7 +63,7 @@ typedef struct {
     unsigned long mask;
 } NAME_EX_TBL;
 
-static OPENSSL_CTX *app_libctx = NULL;
+static OSSL_LIB_CTX *app_libctx = NULL;
 
 static int set_table_opts(unsigned long *flags, const char *arg,
                           const NAME_EX_TBL * in_tbl);
@@ -337,7 +322,7 @@ static char *app_get_pass(const char *arg, int keepbio)
     return OPENSSL_strdup(tpass);
 }
 
-OPENSSL_CTX *app_get0_libctx(void)
+OSSL_LIB_CTX *app_get0_libctx(void)
 {
     return app_libctx;
 }
@@ -348,7 +333,7 @@ const char *app_get0_propq(void)
     return NULL;
 }
 
-OPENSSL_CTX *app_create_libctx(void)
+OSSL_LIB_CTX *app_create_libctx(void)
 {
     /*
      * Load the NULL provider into the default library context and create a
@@ -360,7 +345,7 @@ OPENSSL_CTX *app_create_libctx(void)
             BIO_puts(bio_err, "Failed to create null provider\n");
             return NULL;
         }
-        app_libctx = OPENSSL_CTX_new();
+        app_libctx = OSSL_LIB_CTX_new();
     }
     if (app_libctx == NULL)
         BIO_puts(bio_err, "Failed to create library context\n");
@@ -373,7 +358,7 @@ CONF *app_load_config_bio(BIO *in, const char *filename)
     CONF *conf;
     int i;
 
-    conf = NCONF_new_with_libctx(app_libctx, NULL);
+    conf = NCONF_new_ex(app_libctx, NULL);
     i = NCONF_load_bio(conf, in, &errorline);
     if (i > 0)
         return conf;
@@ -389,7 +374,6 @@ CONF *app_load_config_bio(BIO *in, const char *filename)
     else
         BIO_printf(bio_err, "config input");
 
-    CONF_modules_load(conf, NULL, 0);
     NCONF_free(conf);
     return NULL;
 }
@@ -491,18 +475,13 @@ X509 *load_cert_pass(const char *uri, int maybe_stdin,
 
     if (desc == NULL)
         desc = "certificate";
-    (void)load_key_cert_crl(uri, maybe_stdin, pass, desc, NULL, &cert, NULL);
+    (void)load_key_certs_crls(uri, maybe_stdin, pass, desc,
+                              NULL, NULL, &cert, NULL, NULL, NULL);
     if (cert == NULL) {
         BIO_printf(bio_err, "Unable to load %s\n", desc);
         ERR_print_errors(bio_err);
     }
     return cert;
-}
-
-/* the format parameter is meanwhile not needed anymore and thus ignored */
-X509 *load_cert(const char *uri, int format, const char *desc)
-{
-    return load_cert_pass(uri, 1, NULL, desc);
 }
 
 /* the format parameter is meanwhile not needed anymore and thus ignored */
@@ -512,7 +491,8 @@ X509_CRL *load_crl(const char *uri, int format, const char *desc)
 
     if (desc == NULL)
         desc = "CRL";
-    (void)load_key_cert_crl(uri, 0, NULL, desc, NULL, NULL, &crl);
+    (void)load_key_certs_crls(uri, 0, NULL, desc,
+                              NULL,  NULL, NULL, NULL, &crl, NULL);
     if (crl == NULL) {
         BIO_printf(bio_err, "Unable to load %s\n", desc);
         ERR_print_errors(bio_err);
@@ -571,27 +551,15 @@ EVP_PKEY *load_key(const char *uri, int format, int may_stdin,
         if (e == NULL) {
             BIO_printf(bio_err, "No engine specified for loading %s\n", desc);
         } else {
-#ifndef OPENSSL_NO_ENGINE
-            PW_CB_DATA cb_data;
-
-            cb_data.password = pass;
-            cb_data.prompt_info = uri;
-            if (ENGINE_init(e)) {
-                pkey = ENGINE_load_private_key(e, uri,
-                                               (UI_METHOD *)get_ui_method(),
-                                               &cb_data);
-                ENGINE_finish(e);
-            }
+            pkey = load_engine_private_key(e, uri, pass, desc);
             if (pkey == NULL) {
                 BIO_printf(bio_err, "Cannot load %s from engine\n", desc);
                 ERR_print_errors(bio_err);
             }
-#else
-            BIO_printf(bio_err, "Engines not supported for loading %s\n", desc);
-#endif
         }
     } else {
-        (void)load_key_cert_crl(uri, may_stdin, pass, desc, &pkey, NULL, NULL);
+        (void)load_key_certs_crls(uri, may_stdin, pass, desc,
+                                  &pkey, NULL, NULL, NULL, NULL, NULL);
     }
 
     if (pkey == NULL) {
@@ -613,113 +581,21 @@ EVP_PKEY *load_pubkey(const char *uri, int format, int maybe_stdin,
         if (e == NULL) {
             BIO_printf(bio_err, "No engine specified for loading %s\n", desc);
         } else {
-#ifndef OPENSSL_NO_ENGINE
-            PW_CB_DATA cb_data;
-
-            cb_data.password = pass;
-            cb_data.prompt_info = uri;
-            pkey = ENGINE_load_public_key(e, uri, (UI_METHOD *)get_ui_method(),
-                                          &cb_data);
+            pkey = load_engine_public_key(e, uri, pass, desc);
             if (pkey == NULL) {
                 BIO_printf(bio_err, "Cannot load %s from engine\n", desc);
                 ERR_print_errors(bio_err);
             }
-#else
-            BIO_printf(bio_err, "Engines not supported for loading %s\n", desc);
-#endif
         }
     } else {
-        (void)load_key_cert_crl(uri, maybe_stdin, pass, desc, &pkey,
-                                NULL, NULL);
+        (void)load_key_certs_crls(uri, maybe_stdin, pass, desc,
+                                  NULL, &pkey, NULL, NULL, NULL, NULL);
     }
     if (pkey == NULL) {
         BIO_printf(bio_err, "Unable to load %s\n", desc);
         ERR_print_errors(bio_err);
     }
     return pkey;
-}
-
-static int load_certs_crls(const char *file, int format,
-                           const char *pass, const char *desc,
-                           STACK_OF(X509) **pcerts,
-                           STACK_OF(X509_CRL) **pcrls)
-{
-    int i;
-    BIO *bio;
-    STACK_OF(X509_INFO) *xis = NULL;
-    X509_INFO *xi;
-    PW_CB_DATA cb_data;
-    int rv = 0;
-
-    cb_data.password = pass;
-    cb_data.prompt_info = file;
-
-    if (format != FORMAT_PEM) {
-        BIO_printf(bio_err, "Bad input format specified for %s\n", desc);
-        return 0;
-    }
-
-    bio = bio_open_default(file, 'r', FORMAT_PEM);
-    if (bio == NULL)
-        return 0;
-
-    xis = PEM_X509_INFO_read_bio_with_libctx(bio, NULL,
-                                             (pem_password_cb *)password_callback,
-                                             &cb_data,
-                                             app_get0_libctx(),
-                                             app_get0_propq());
-
-    BIO_free(bio);
-
-    if (pcerts != NULL && *pcerts == NULL) {
-        *pcerts = sk_X509_new_null();
-        if (*pcerts == NULL)
-            goto end;
-    }
-
-    if (pcrls != NULL && *pcrls == NULL) {
-        *pcrls = sk_X509_CRL_new_null();
-        if (*pcrls == NULL)
-            goto end;
-    }
-
-    for (i = 0; i < sk_X509_INFO_num(xis); i++) {
-        xi = sk_X509_INFO_value(xis, i);
-        if (xi->x509 != NULL && pcerts != NULL) {
-            if (!sk_X509_push(*pcerts, xi->x509))
-                goto end;
-            xi->x509 = NULL;
-        }
-        if (xi->crl != NULL && pcrls != NULL) {
-            if (!sk_X509_CRL_push(*pcrls, xi->crl))
-                goto end;
-            xi->crl = NULL;
-        }
-    }
-
-    if (pcerts != NULL && sk_X509_num(*pcerts) > 0)
-        rv = 1;
-
-    if (pcrls != NULL && sk_X509_CRL_num(*pcrls) > 0)
-        rv = 1;
-
- end:
-
-    sk_X509_INFO_pop_free(xis, X509_INFO_free);
-
-    if (rv == 0) {
-        if (pcerts != NULL) {
-            sk_X509_pop_free(*pcerts, X509_free);
-            *pcerts = NULL;
-        }
-        if (pcrls != NULL) {
-            sk_X509_CRL_pop_free(*pcrls, X509_CRL_free);
-            *pcrls = NULL;
-        }
-        BIO_printf(bio_err, "Unable to load %s\n", desc != NULL ? desc :
-                   pcerts != NULL ? "certificates" : "CRLs");
-    }
-    return rv;
 }
 
 void app_bail_out(char *fmt, ...)
@@ -745,48 +621,96 @@ void* app_malloc(int sz, const char *what)
 
 /*
  * Initialize or extend, if *certs != NULL, a certificate stack.
+ * The caller is responsible for freeing *certs if its value is left not NULL.
  */
-int load_certs(const char *file, STACK_OF(X509) **certs, int format,
+int load_certs(const char *uri, STACK_OF(X509) **certs,
                const char *pass, const char *desc)
 {
-    return load_certs_crls(file, format, pass, desc, certs, NULL);
+    int was_NULL = *certs == NULL;
+    int ret = load_key_certs_crls(uri, 0, pass, desc, NULL, NULL,
+                                  NULL, certs, NULL, NULL);
+
+    if (!ret && was_NULL) {
+        sk_X509_pop_free(*certs, X509_free);
+        *certs = NULL;
+    }
+    return ret;
 }
 
 /*
  * Initialize or extend, if *crls != NULL, a certificate stack.
+ * The caller is responsible for freeing *crls if its value is left not NULL.
  */
-int load_crls(const char *file, STACK_OF(X509_CRL) **crls, int format,
+int load_crls(const char *uri, STACK_OF(X509_CRL) **crls,
               const char *pass, const char *desc)
 {
-    return load_certs_crls(file, format, pass, desc, NULL, crls);
+    int was_NULL = *crls == NULL;
+    int ret = load_key_certs_crls(uri, 0, pass, desc, NULL, NULL,
+                                  NULL, NULL, NULL, crls);
+
+    if (!ret && was_NULL) {
+        sk_X509_CRL_pop_free(*crls, X509_CRL_free);
+        *crls = NULL;
+    }
+    return ret;
 }
 
 /*
  * Load those types of credentials for which the result pointer is not NULL.
  * Reads from stdio if uri is NULL and maybe_stdin is nonzero.
- * For each type the first credential found in the store is loaded.
- * May yield partial result even if rv == 0.
+ * For non-NULL ppkey, pcert, and pcrl the first suitable value found is loaded.
+ * If pcerts is non-NULL and *pcerts == NULL then a new cert list is allocated.
+ * If pcerts is non-NULL then all available certificates are appended to *pcerts
+ * except any certificate assigned to *pcert.
+ * If pcrls is non-NULL and *pcrls == NULL then a new list of CRLs is allocated.
+ * If pcrls is non-NULL then all available CRLs are appended to *pcerts
+ * except any CRL assigned to *pcrl.
+ * In any case (also on error) the caller is responsible for freeing all members
+ * of *pcerts and *pcrls (as far as they are not NULL).
  */
-int load_key_cert_crl(const char *uri, int maybe_stdin,
-                      const char *pass, const char *desc,
-                      EVP_PKEY **ppkey, X509 **pcert, X509_CRL **pcrl)
+int load_key_certs_crls(const char *uri, int maybe_stdin,
+                        const char *pass, const char *desc,
+                        EVP_PKEY **ppkey, EVP_PKEY **ppubkey,
+                        X509 **pcert, STACK_OF(X509) **pcerts,
+                        X509_CRL **pcrl, STACK_OF(X509_CRL) **pcrls)
 {
     PW_CB_DATA uidata;
     OSSL_STORE_CTX *ctx = NULL;
-    OPENSSL_CTX *libctx = app_get0_libctx();
+    OSSL_LIB_CTX *libctx = app_get0_libctx();
     const char *propq = app_get0_propq();
-    int ret = 0;
+    int ncerts = 0;
+    int ncrls = 0;
+    const char *failed =
+        ppkey != NULL ? "key" : ppubkey != NULL ? "public key" :
+        pcert != NULL ? "cert" : pcrl != NULL ? "CRL" :
+        pcerts != NULL ? "certs" : pcrls != NULL ? "CRLs" : NULL;
     /* TODO make use of the engine reference 'eng' when loading pkeys */
 
     if (ppkey != NULL)
         *ppkey = NULL;
+    if (ppubkey != NULL)
+        *ppubkey = NULL;
     if (pcert != NULL)
         *pcert = NULL;
+    if (failed == NULL) {
+        BIO_printf(bio_err, "Internal error: nothing to load into from %s\n",
+                   uri != NULL ? uri : "<stdin>");
+        return 0;
+    }
+
+    if (pcerts != NULL && *pcerts == NULL
+            && (*pcerts = sk_X509_new_null()) == NULL) {
+        BIO_printf(bio_err, "Out of memory loading");
+        goto end;
+    }
     if (pcrl != NULL)
         *pcrl = NULL;
+    if (pcrls != NULL && *pcrls == NULL
+            && (*pcrls = sk_X509_CRL_new_null()) == NULL) {
+        BIO_printf(bio_err, "Out of memory loading");
+        goto end;
+    }
 
-    if (desc == NULL)
-        desc = "key/certificate/CRL";
     uidata.password = pass;
     uidata.prompt_info = uri;
 
@@ -794,69 +718,112 @@ int load_key_cert_crl(const char *uri, int maybe_stdin,
         BIO *bio;
 
         if (!maybe_stdin) {
-            BIO_printf(bio_err, "No filename or uri specified for loading %s\n",
-                       desc);
+            BIO_printf(bio_err, "No filename or uri specified for loading");
             goto end;
         }
+        uri = "<stdin>";
         unbuffer(stdin);
         bio = BIO_new_fp(stdin, 0);
         if (bio != NULL)
             ctx = OSSL_STORE_attach(bio, "file", libctx, propq,
                                     get_ui_method(), &uidata, NULL, NULL);
-        uri = "<stdin>";
     } else {
-        ctx = OSSL_STORE_open_with_libctx(uri, libctx, propq, get_ui_method(),
-                                          &uidata, NULL, NULL);
+        ctx = OSSL_STORE_open_ex(uri, libctx, propq, get_ui_method(), &uidata,
+                                 NULL, NULL);
     }
     if (ctx == NULL) {
-        BIO_printf(bio_err, "Could not open file or uri %s for loading %s\n",
-                   uri, desc);
+        BIO_printf(bio_err, "Could not open file or uri for loading");
         goto end;
     }
 
-    for (;;) {
+    failed = NULL;
+    while (!OSSL_STORE_eof(ctx)) {
         OSSL_STORE_INFO *info = OSSL_STORE_load(ctx);
-        int type = info == NULL ? 0 : OSSL_STORE_INFO_get_type(info);
-        const char *infostr =
-            info == NULL ? NULL : OSSL_STORE_INFO_type_string(type);
-        int err = 0;
+        int type, ok = 1;
 
-        if (info == NULL) {
-            if (OSSL_STORE_eof(ctx))
-                ret = 1;
+        if (info == NULL)
             break;
-        }
-
+        type = OSSL_STORE_INFO_get_type(info);
         switch (type) {
         case OSSL_STORE_INFO_PKEY:
             if (ppkey != NULL && *ppkey == NULL)
-                err = ((*ppkey = OSSL_STORE_INFO_get1_PKEY(info)) == NULL);
+                ok = (*ppkey = OSSL_STORE_INFO_get1_PKEY(info)) != NULL;
+
+            /*
+             * An EVP_PKEY with private parts also holds the public parts,
+             * so if the caller asked for a public key, and we got a private
+             * key, we can still pass it back.
+             */
+            if (ok && ppubkey != NULL && *ppubkey == NULL)
+                ok = ((*ppubkey = OSSL_STORE_INFO_get1_PKEY(info)) != NULL);
+            break;
+        case OSSL_STORE_INFO_PUBKEY:
+            if (ppubkey != NULL && *ppubkey == NULL)
+                ok = ((*ppubkey = OSSL_STORE_INFO_get1_PUBKEY(info)) != NULL);
             break;
         case OSSL_STORE_INFO_CERT:
             if (pcert != NULL && *pcert == NULL)
-                err = ((*pcert = OSSL_STORE_INFO_get1_CERT(info)) == NULL);
+                ok = (*pcert = OSSL_STORE_INFO_get1_CERT(info)) != NULL;
+            else if (pcerts != NULL)
+                ok = X509_add_cert(*pcerts,
+                                   OSSL_STORE_INFO_get1_CERT(info),
+                                   X509_ADD_FLAG_DEFAULT);
+            ncerts += ok;
             break;
         case OSSL_STORE_INFO_CRL:
             if (pcrl != NULL && *pcrl == NULL)
-                err = ((*pcrl = OSSL_STORE_INFO_get1_CRL(info)) == NULL);
+                ok = (*pcrl = OSSL_STORE_INFO_get1_CRL(info)) != NULL;
+            else if (pcrls != NULL)
+                ok = sk_X509_CRL_push(*pcrls, OSSL_STORE_INFO_get1_CRL(info));
+            ncrls += ok;
             break;
         default:
             /* skip any other type */
             break;
         }
         OSSL_STORE_INFO_free(info);
-        if (err) {
-            BIO_printf(bio_err, "Could not read %s of %s from %s\n",
-                       infostr, desc, uri);
+        if (!ok) {
+            failed = info == NULL ? NULL : OSSL_STORE_INFO_type_string(type);
+            BIO_printf(bio_err, "Error reading");
             break;
         }
     }
 
  end:
     OSSL_STORE_close(ctx);
-    if (!ret)
+    if (failed == NULL) {
+        int any = 0;
+
+        if (ppkey != NULL && *ppkey == NULL) {
+            failed = "key";
+        } else if ((pcert != NULL || pcerts != NULL) && ncerts == 0) {
+            if (pcert == NULL)
+                any = 1;
+            failed = "cert";
+        } else if ((pcrl != NULL || pcrls != NULL) && ncrls == 0) {
+            if (pcrl == NULL)
+                any = 1;
+            failed = "CRL";
+        }
+        if (failed != NULL)
+            BIO_printf(bio_err, "Could not read");
+        if (any)
+            BIO_printf(bio_err, " any");
+    }
+    if (failed != NULL) {
+        if (desc != NULL && strstr(desc, failed) != NULL) {
+            BIO_printf(bio_err, " %s", desc);
+        } else {
+            BIO_printf(bio_err, " %s", failed);
+            if (desc != NULL)
+                BIO_printf(bio_err, " of %s", desc);
+        }
+        if (uri != NULL)
+            BIO_printf(bio_err, " from %s", uri);
+        BIO_printf(bio_err, "\n");
         ERR_print_errors(bio_err);
-    return ret;
+    }
+    return failed == NULL;
 }
 
 
@@ -1110,7 +1077,7 @@ X509_STORE *setup_verify(const char *CAfile, int noCAfile,
 {
     X509_STORE *store = X509_STORE_new();
     X509_LOOKUP *lookup;
-    OPENSSL_CTX *libctx = app_get0_libctx();
+    OSSL_LIB_CTX *libctx = app_get0_libctx();
     const char *propq = app_get0_propq();
 
     if (store == NULL)
@@ -1121,16 +1088,14 @@ X509_STORE *setup_verify(const char *CAfile, int noCAfile,
         if (lookup == NULL)
             goto end;
         if (CAfile != NULL) {
-            if (!X509_LOOKUP_load_file_with_libctx(lookup, CAfile,
-                                                   X509_FILETYPE_PEM,
-                                                   libctx, propq)) {
+            if (!X509_LOOKUP_load_file_ex(lookup, CAfile, X509_FILETYPE_PEM,
+                                          libctx, propq)) {
                 BIO_printf(bio_err, "Error loading file %s\n", CAfile);
                 goto end;
             }
         } else {
-            X509_LOOKUP_load_file_with_libctx(lookup, NULL,
-                                              X509_FILETYPE_DEFAULT,
-                                              libctx, propq);
+            X509_LOOKUP_load_file_ex(lookup, NULL, X509_FILETYPE_DEFAULT,
+                                     libctx, propq);
         }
     }
 
@@ -1152,7 +1117,7 @@ X509_STORE *setup_verify(const char *CAfile, int noCAfile,
         lookup = X509_STORE_add_lookup(store, X509_LOOKUP_store());
         if (lookup == NULL)
             goto end;
-        if (!X509_LOOKUP_add_store_with_libctx(lookup, CAstore, libctx, propq)) {
+        if (!X509_LOOKUP_add_store_ex(lookup, CAstore, libctx, propq)) {
             if (CAstore != NULL)
                 BIO_printf(bio_err, "Error loading store URI %s\n", CAstore);
             goto end;
@@ -1165,64 +1130,6 @@ X509_STORE *setup_verify(const char *CAfile, int noCAfile,
     ERR_print_errors(bio_err);
     X509_STORE_free(store);
     return NULL;
-}
-
-#ifndef OPENSSL_NO_ENGINE
-/* Try to load an engine in a shareable library */
-static ENGINE *try_load_engine(const char *engine)
-{
-    ENGINE *e = ENGINE_by_id("dynamic");
-    if (e) {
-        if (!ENGINE_ctrl_cmd_string(e, "SO_PATH", engine, 0)
-            || !ENGINE_ctrl_cmd_string(e, "LOAD", NULL, 0)) {
-            ENGINE_free(e);
-            e = NULL;
-        }
-    }
-    return e;
-}
-#endif
-
-ENGINE *setup_engine_methods(const char *id, unsigned int methods, int debug)
-{
-    ENGINE *e = NULL;
-
-#ifndef OPENSSL_NO_ENGINE
-    if (id != NULL) {
-        if (strcmp(id, "auto") == 0) {
-            BIO_printf(bio_err, "Enabling auto ENGINE support\n");
-            ENGINE_register_all_complete();
-            return NULL;
-        }
-        if ((e = ENGINE_by_id(id)) == NULL
-            && (e = try_load_engine(id)) == NULL) {
-            BIO_printf(bio_err, "Invalid engine \"%s\"\n", id);
-            ERR_print_errors(bio_err);
-            return NULL;
-        }
-        if (debug)
-            (void)ENGINE_ctrl(e, ENGINE_CTRL_SET_LOGSTREAM, 0, bio_err, 0);
-        if (!ENGINE_ctrl_cmd(e, "SET_USER_INTERFACE", 0,
-                             (void *)get_ui_method(), 0, 1)
-                || !ENGINE_set_default(e, methods)) {
-            BIO_printf(bio_err, "Cannot use engine \"%s\"\n", ENGINE_get_id(e));
-            ERR_print_errors(bio_err);
-            ENGINE_free(e);
-            return NULL;
-        }
-
-        BIO_printf(bio_err, "Engine \"%s\" set.\n", ENGINE_get_id(e));
-    }
-#endif
-    return e;
-}
-
-void release_engine(ENGINE *e)
-{
-#ifndef OPENSSL_NO_ENGINE
-    /* Free our "structural" reference. */
-    ENGINE_free(e);
-#endif
 }
 
 static unsigned long index_serial_hash(const OPENSSL_CSTRING *a)
@@ -1668,7 +1575,8 @@ int parse_yesno(const char *str, int def)
 
 /*
  * name is expected to be in the format /type0=value0/type1=value1/type2=...
- * where characters may be escaped by \
+ * where + can be used instead of / to form multi-valued RDNs if canmulti
+ * and characters may be escaped by \
  */
 X509_NAME *parse_name(const char *cp, int chtype, int canmulti,
                       const char *desc)
@@ -1721,6 +1629,7 @@ X509_NAME *parse_name(const char *cp, int chtype, int canmulti,
         /* Collect the value. */
         valstr = (unsigned char *)bp;
         for (; *cp != '\0' && *cp != '/'; *bp++ = *cp++) {
+            /* unescaped '+' symbol string signals further member of multiRDN */
             if (canmulti && *cp == '+') {
                 nextismulti = 1;
                 break;
@@ -1744,6 +1653,9 @@ X509_NAME *parse_name(const char *cp, int chtype, int canmulti,
             BIO_printf(bio_err,
                        "%s: Skipping unknown %s name attribute \"%s\"\n",
                        opt_getprog(), desc, typestr);
+            if (ismulti)
+                BIO_printf(bio_err,
+                           "Hint: a '+' in a value string needs be escaped using '\\' else a new member of a multi-valued RDN is expected\n");
             continue;
         }
         if (*valstr == '\0') {
@@ -2105,7 +2017,7 @@ ASN1_VALUE *app_http_get_asn1(const char *url, const char *proxy,
         return NULL;
     }
 
-    if (!OSSL_HTTP_parse_url(url, &server, &port, NULL /* ppath */, &use_ssl))
+    if (!OSSL_HTTP_parse_url(url, &server, &port, NULL, NULL, &use_ssl))
         return NULL;
     if (use_ssl && ssl_ctx == NULL) {
         HTTPerr(0, ERR_R_PASSED_NULL_PARAMETER);
@@ -2415,6 +2327,11 @@ int raw_read_stdin(void *buf, int siz)
     return recv(fileno_stdin(), buf, siz, 0);
 }
 #else
+# if defined(__TANDEM)
+#  if defined(OPENSSL_TANDEM_FLOSS)
+#   include <floss.h(floss_read)>
+#  endif
+# endif
 int raw_read_stdin(void *buf, int siz)
 {
     return read(fileno_stdin(), buf, siz);
@@ -2430,7 +2347,22 @@ int raw_write_stdout(const void *buf, int siz)
     else
         return -1;
 }
+#elif defined(OPENSSL_SYS_TANDEM) && defined(OPENSSL_THREADS) && defined(_SPT_MODEL_)
+# if defined(__TANDEM)
+#  if defined(OPENSSL_TANDEM_FLOSS)
+#   include <floss.h(floss_write)>
+#  endif
+# endif
+int raw_write_stdout(const void *buf,int siz)
+{
+	return write(fileno(stdout),(void*)buf,siz);
+}
 #else
+# if defined(__TANDEM)
+#  if defined(OPENSSL_TANDEM_FLOSS)
+#   include <floss.h(floss_write)>
+#  endif
+# endif
 int raw_write_stdout(const void *buf, int siz)
 {
     return write(fileno_stdout(), buf, siz);
@@ -2718,6 +2650,57 @@ int set_cert_times(X509 *x, const char *startdate, const char *enddate,
         return 0;
     }
     return 1;
+}
+
+int set_crl_lastupdate(X509_CRL *crl, const char *lastupdate)
+{
+    int ret = 0;
+    ASN1_TIME *tm = ASN1_TIME_new();
+
+    if (tm == NULL)
+        goto end;
+
+    if (lastupdate == NULL) {
+        if (X509_gmtime_adj(tm, 0) == NULL)
+            goto end;
+    } else {
+        if (!ASN1_TIME_set_string_X509(tm, lastupdate))
+            goto end;
+    }
+
+    if (!X509_CRL_set1_lastUpdate(crl, tm))
+        goto end;
+
+    ret = 1;
+end:
+    ASN1_TIME_free(tm);
+    return ret;
+}
+
+int set_crl_nextupdate(X509_CRL *crl, const char *nextupdate,
+                       long days, long hours, long secs)
+{
+    int ret = 0;
+    ASN1_TIME *tm = ASN1_TIME_new();
+
+    if (tm == NULL)
+        goto end;
+
+    if (nextupdate == NULL) {
+        if (X509_time_adj_ex(tm, days, hours * 60 * 60 + secs, NULL) == NULL)
+            goto end;
+    } else {
+        if (!ASN1_TIME_set_string_X509(tm, nextupdate))
+            goto end;
+    }
+
+    if (!X509_CRL_set1_nextUpdate(crl, tm))
+        goto end;
+
+    ret = 1;
+end:
+    ASN1_TIME_free(tm);
+    return ret;
 }
 
 void make_uppercase(char *string)

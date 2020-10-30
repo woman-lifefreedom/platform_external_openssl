@@ -14,7 +14,7 @@
 #include "internal/provider.h"
 
 struct algorithm_data_st {
-    OPENSSL_CTX *libctx;
+    OSSL_LIB_CTX *libctx;
     int operation_id;            /* May be zero for finding them all */
     int (*pre)(OSSL_PROVIDER *, int operation_id, void *data, int *result);
     void (*fn)(OSSL_PROVIDER *, const OSSL_ALGORITHM *, int no_store,
@@ -31,7 +31,7 @@ static int algorithm_do_this(OSSL_PROVIDER *provider, void *cbdata)
     int first_operation = 1;
     int last_operation = OSSL_OP__HIGHEST;
     int cur_operation;
-    int ok = 0;
+    int ok = 1;
 
     if (data->operation_id != 0)
         first_operation = last_operation = data->operation_id;
@@ -77,15 +77,15 @@ static int algorithm_do_this(OSSL_PROVIDER *provider, void *cbdata)
                 return 0;
         }
 
-        /* If post-condition fulfilled, set general success */
-        if (ret)
-            ok = 1;
+        /* If post-condition not fulfilled, set general failure */
+        if (!ret)
+            ok = 0;
     }
 
     return ok;
 }
 
-void ossl_algorithm_do_all(OPENSSL_CTX *libctx, int operation_id,
+void ossl_algorithm_do_all(OSSL_LIB_CTX *libctx, int operation_id,
                            OSSL_PROVIDER *provider,
                            int (*pre)(OSSL_PROVIDER *, int operation_id,
                                       void *data, int *result),

@@ -150,7 +150,7 @@ struct prov_drbg_st {
      * (Starts at 1). This value is the reseed_counter as defined in
      * NIST SP 800-90Ar1
      */
-    unsigned int reseed_gen_counter;
+    unsigned int generate_counter;
     /*
      * Maximum number of generate requests until a reseed is required.
      * This value is ignored if it is zero.
@@ -205,28 +205,19 @@ PROV_DRBG *prov_rand_drbg_new
                      const unsigned char *adin, size_t adin_len));
 void prov_rand_drbg_free(PROV_DRBG *drbg);
 
-int PROV_DRBG_instantiate(PROV_DRBG *drbg, unsigned int strength,
-                          int prediction_resistance,
-                          const unsigned char *pers, size_t perslen);
+int ossl_prov_drbg_instantiate(PROV_DRBG *drbg, unsigned int strength,
+                               int prediction_resistance,
+                               const unsigned char *pers, size_t perslen);
 
-int PROV_DRBG_uninstantiate(PROV_DRBG *drbg);
+int ossl_prov_drbg_uninstantiate(PROV_DRBG *drbg);
 
-int PROV_DRBG_reseed(PROV_DRBG *drbg, int prediction_resistance,
-                     const unsigned char *ent, size_t ent_len,
-                     const unsigned char *adin, size_t adinlen);
+int ossl_prov_drbg_reseed(PROV_DRBG *drbg, int prediction_resistance,
+                          const unsigned char *ent, size_t ent_len,
+                          const unsigned char *adin, size_t adinlen);
 
-int PROV_DRBG_generate(PROV_DRBG *drbg, unsigned char *out, size_t outlen,
-                       unsigned int strength, int prediction_resistance,
-                       const unsigned char *adin, size_t adinlen);
-
-/*
- * Entropy call back for the FIPS 140-2 section 4.9.2 Conditional Tests.
- * These need to be exposed for the unit tests.
- */
-int drbg_set_callbacks(void *vctx, OSSL_INOUT_CALLBACK *get_entropy_fn,
-                       OSSL_CALLBACK *cleanup_entropy_fn,
-                       OSSL_INOUT_CALLBACK *get_nonce_fn,
-                       OSSL_CALLBACK *cleanup_nonce_fn, void *arg);
+int ossl_prov_drbg_generate(PROV_DRBG *drbg, unsigned char *out, size_t outlen,
+                            unsigned int strength, int prediction_resistance,
+                            const unsigned char *adin, size_t adinlen);
 
 /* Verify that an array of numeric values is all zero */
 #define PROV_DRBG_VERYIFY_ZEROIZATION(v)    \
@@ -247,11 +238,11 @@ OSSL_FUNC_rand_unlock_fn drbg_unlock;
 int drbg_get_ctx_params(PROV_DRBG *drbg, OSSL_PARAM params[]);
 int drbg_set_ctx_params(PROV_DRBG *drbg, const OSSL_PARAM params[]);
 
-#define OSSL_PARAM_DRBG_SETABLE_CTX_COMMON                                      \
+#define OSSL_PARAM_DRBG_SETTABLE_CTX_COMMON                                      \
     OSSL_PARAM_uint(OSSL_DRBG_PARAM_RESEED_REQUESTS, NULL),             \
     OSSL_PARAM_uint64(OSSL_DRBG_PARAM_RESEED_TIME_INTERVAL, NULL)
 
-#define OSSL_PARAM_DRBG_GETABLE_CTX_COMMON                              \
+#define OSSL_PARAM_DRBG_GETTABLE_CTX_COMMON                              \
     OSSL_PARAM_int(OSSL_RAND_PARAM_STATE, NULL),                        \
     OSSL_PARAM_uint(OSSL_RAND_PARAM_STRENGTH, NULL),                    \
     OSSL_PARAM_size_t(OSSL_DRBG_PARAM_MAX_REQUEST, NULL),               \
@@ -261,7 +252,7 @@ int drbg_set_ctx_params(PROV_DRBG *drbg, const OSSL_PARAM params[]);
     OSSL_PARAM_size_t(OSSL_DRBG_PARAM_MAX_NONCELEN, NULL),              \
     OSSL_PARAM_size_t(OSSL_DRBG_PARAM_MAX_PERSLEN, NULL),               \
     OSSL_PARAM_size_t(OSSL_DRBG_PARAM_MAX_ADINLEN, NULL),               \
-    OSSL_PARAM_uint(OSSL_DRBG_PARAM_RESEED_CTR, NULL),                  \
+    OSSL_PARAM_uint(OSSL_DRBG_PARAM_RESEED_COUNTER, NULL),                  \
     OSSL_PARAM_time_t(OSSL_DRBG_PARAM_RESEED_TIME, NULL),               \
     OSSL_PARAM_uint(OSSL_DRBG_PARAM_RESEED_REQUESTS, NULL),             \
     OSSL_PARAM_uint64(OSSL_DRBG_PARAM_RESEED_TIME_INTERVAL, NULL)

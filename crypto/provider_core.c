@@ -14,6 +14,7 @@
 #include <openssl/params.h>
 #include <openssl/opensslv.h>
 #include "crypto/cryptlib.h"
+#include "crypto/evp.h" /* evp_method_store_flush */
 #include "internal/nelem.h"
 #include "internal/thread_once.h"
 #include "internal/provider.h"
@@ -53,7 +54,7 @@ struct ossl_provider_st {
     DSO *module;
     OSSL_provider_init_fn *init_function;
     STACK_OF(INFOPAIR) *parameters;
-    OPENSSL_CTX *libctx; /* The library context this instance is in */
+    OSSL_LIB_CTX *libctx; /* The library context this instance is in */
     struct provider_store_st *store; /* The store this instance belongs to */
 #ifndef FIPS_MODULE
     /*
@@ -71,6 +72,7 @@ struct ossl_provider_st {
     OSSL_FUNC_provider_gettable_params_fn *gettable_params;
     OSSL_FUNC_provider_get_params_fn *get_params;
     OSSL_FUNC_provider_get_capabilities_fn *get_capabilities;
+    OSSL_FUNC_provider_self_test_fn *self_test;
     OSSL_FUNC_provider_query_operation_fn *query_operation;
 
     /*
@@ -136,7 +138,7 @@ static void provider_store_free(void *vstore)
     OPENSSL_free(store);
 }
 
-static void *provider_store_new(OPENSSL_CTX *ctx)
+static void *provider_store_new(OSSL_LIB_CTX *ctx)
 {
     struct provider_store_st *store = OPENSSL_zalloc(sizeof(*store));
     const struct predefined_providers_st *p = NULL;
@@ -177,23 +179,34 @@ static void *provider_store_new(OPENSSL_CTX *ctx)
     return store;
 }
 
-static const OPENSSL_CTX_METHOD provider_store_method = {
+static const OSSL_LIB_CTX_METHOD provider_store_method = {
     provider_store_new,
     provider_store_free,
 };
 
-static struct provider_store_st *get_provider_store(OPENSSL_CTX *libctx)
+static struct provider_store_st *get_provider_store(OSSL_LIB_CTX *libctx)
 {
     struct provider_store_st *store = NULL;
 
-    store = openssl_ctx_get_data(libctx, OPENSSL_CTX_PROVIDER_STORE_INDEX,
-                                 &provider_store_method);
+    store = ossl_lib_ctx_get_data(libctx, OSSL_LIB_CTX_PROVIDER_STORE_INDEX,
+                                  &provider_store_method);
     if (store == NULL)
         CRYPTOerr(CRYPTO_F_GET_PROVIDER_STORE, ERR_R_INTERNAL_ERROR);
     return store;
 }
 
-OSSL_PROVIDER *ossl_provider_find(OPENSSL_CTX *libctx, const char *name,
+int ossl_provider_disable_fallback_loading(OSSL_LIB_CTX *libctx)
+{
+    struct provider_store_st *store;
+
+    if ((store = get_provider_store(libctx)) != NULL) {
+        store->use_fallbacks = 0;
+        return 1;
+    }
+    return 0;
+}
+
+OSSL_PROVIDER *ossl_provider_find(OSSL_LIB_CTX *libctx, const char *name,
                                   int noconfig)
 {
     struct provider_store_st *store = NULL;
@@ -258,7 +271,7 @@ int ossl_provider_up_ref(OSSL_PROVIDER *prov)
     return ref;
 }
 
-OSSL_PROVIDER *ossl_provider_new(OPENSSL_CTX *libctx, const char *name,
+OSSL_PROVIDER *ossl_provider_new(OSSL_LIB_CTX *libctx, const char *name,
                                  OSSL_provider_init_fn *init_function,
                                  int noconfig)
 {
@@ -417,7 +430,8 @@ int ossl_provider_add_parameter(OSSL_PROVIDER *prov,
  */
 static const OSSL_DISPATCH *core_dispatch; /* Define further down */
 
-int OSSL_PROVIDER_set_default_search_path(OPENSSL_CTX *libctx, const char *path)
+int OSSL_PROVIDER_set_default_search_path(OSSL_LIB_CTX *libctx,
+                                          const char *path)
 {
     struct provider_store_st *store;
     char *p = NULL;
@@ -543,6 +557,10 @@ static int provider_activate(OSSL_PROVIDER *prov)
         case OSSL_FUNC_PROVIDER_GET_PARAMS:
             prov->get_params =
                 OSSL_FUNC_provider_get_params(provider_dispatch);
+            break;
+        case OSSL_FUNC_PROVIDER_SELF_TEST:
+            prov->self_test =
+                OSSL_FUNC_provider_self_test(provider_dispatch);
             break;
         case OSSL_FUNC_PROVIDER_GET_CAPABILITIES:
             prov->get_capabilities =
@@ -707,7 +725,7 @@ static void provider_activate_fallbacks(struct provider_store_st *store)
     }
 }
 
-int ossl_provider_forall_loaded(OPENSSL_CTX *ctx,
+int ossl_provider_forall_loaded(OSSL_LIB_CTX *ctx,
                                 int (*cb)(OSSL_PROVIDER *provider,
                                           void *cbdata),
                                 void *cbdata)
@@ -799,7 +817,7 @@ void *ossl_provider_prov_ctx(const OSSL_PROVIDER *prov)
     return NULL;
 }
 
-OPENSSL_CTX *ossl_provider_library_context(const OSSL_PROVIDER *prov)
+OSSL_LIB_CTX *ossl_provider_libctx(const OSSL_PROVIDER *prov)
 {
     /* TODO(3.0) just: return prov->libctx; */
     return prov != NULL ? prov->libctx : NULL;
@@ -824,6 +842,18 @@ int ossl_provider_get_params(const OSSL_PROVIDER *prov, OSSL_PARAM params[])
         ? 0 : prov->get_params(prov->provctx, params);
 }
 
+int ossl_provider_self_test(const OSSL_PROVIDER *prov)
+{
+    int ret;
+
+    if (prov->self_test == NULL)
+        return 1;
+    ret = prov->self_test(prov->provctx);
+    if (ret == 0)
+        evp_method_store_flush(ossl_provider_libctx(prov));
+    return ret;
+}
+
 int ossl_provider_get_capabilities(const OSSL_PROVIDER *prov,
                                    const char *capability,
                                    OSSL_CALLBACK *cb,
@@ -833,12 +863,12 @@ int ossl_provider_get_capabilities(const OSSL_PROVIDER *prov,
         ? 1 : prov->get_capabilities(prov->provctx, capability, cb, arg);
 }
 
-
 const OSSL_ALGORITHM *ossl_provider_query_operation(const OSSL_PROVIDER *prov,
                                                     int operation_id,
                                                     int *no_cache)
 {
-    return prov->query_operation(prov->provctx, operation_id, no_cache);
+    return prov->query_operation == NULL
+        ? NULL : prov->query_operation(prov->provctx, operation_id, no_cache);
 }
 
 int ossl_provider_set_operation_bit(OSSL_PROVIDER *provider, size_t bitnum)
@@ -847,14 +877,17 @@ int ossl_provider_set_operation_bit(OSSL_PROVIDER *provider, size_t bitnum)
     unsigned char bit = (1 << (bitnum % 8)) & 0xFF;
 
     if (provider->operation_bits_sz <= byte) {
-        provider->operation_bits = OPENSSL_realloc(provider->operation_bits,
-                                                   byte + 1);
-        if (provider->operation_bits == NULL) {
+        unsigned char *tmp = OPENSSL_realloc(provider->operation_bits,
+                                             byte + 1);
+
+        if (tmp == NULL) {
             ERR_raise(ERR_LIB_CRYPTO, ERR_R_MALLOC_FAILURE);
             return 0;
         }
+        provider->operation_bits = tmp;
         memset(provider->operation_bits + provider->operation_bits_sz,
                '\0', byte + 1 - provider->operation_bits_sz);
+        provider->operation_bits_sz = byte + 1;
     }
     provider->operation_bits[byte] |= bit;
     return 1;
@@ -908,7 +941,7 @@ static const OSSL_PARAM param_types[] = {
 static OSSL_FUNC_core_gettable_params_fn core_gettable_params;
 static OSSL_FUNC_core_get_params_fn core_get_params;
 static OSSL_FUNC_core_thread_start_fn core_thread_start;
-static OSSL_FUNC_core_get_library_context_fn core_get_libctx;
+static OSSL_FUNC_core_get_libctx_fn core_get_libctx;
 #ifndef FIPS_MODULE
 static OSSL_FUNC_core_new_error_fn core_new_error;
 static OSSL_FUNC_core_set_error_debug_fn core_set_error_debug;
@@ -964,7 +997,7 @@ static OPENSSL_CORE_CTX *core_get_libctx(const OSSL_CORE_HANDLE *handle)
      */
     OSSL_PROVIDER *prov = (OSSL_PROVIDER *)handle;
 
-    return (OPENSSL_CORE_CTX *)ossl_provider_library_context(prov);
+    return (OPENSSL_CORE_CTX *)ossl_provider_libctx(prov);
 }
 
 static int core_thread_start(const OSSL_CORE_HANDLE *handle,
@@ -1047,7 +1080,7 @@ static int core_pop_error_to_mark(const OSSL_CORE_HANDLE *handle)
 static const OSSL_DISPATCH core_dispatch_[] = {
     { OSSL_FUNC_CORE_GETTABLE_PARAMS, (void (*)(void))core_gettable_params },
     { OSSL_FUNC_CORE_GET_PARAMS, (void (*)(void))core_get_params },
-    { OSSL_FUNC_CORE_GET_LIBRARY_CONTEXT, (void (*)(void))core_get_libctx },
+    { OSSL_FUNC_CORE_GET_LIBCTX, (void (*)(void))core_get_libctx },
     { OSSL_FUNC_CORE_THREAD_START, (void (*)(void))core_thread_start },
 #ifndef FIPS_MODULE
     { OSSL_FUNC_CORE_NEW_ERROR, (void (*)(void))core_new_error },
@@ -1063,6 +1096,7 @@ static const OSSL_DISPATCH core_dispatch_[] = {
     { OSSL_FUNC_BIO_WRITE_EX, (void (*)(void))BIO_write_ex },
     { OSSL_FUNC_BIO_GETS, (void (*)(void))BIO_gets },
     { OSSL_FUNC_BIO_PUTS, (void (*)(void))BIO_puts },
+    { OSSL_FUNC_BIO_CTRL, (void (*)(void))BIO_ctrl },
     { OSSL_FUNC_BIO_FREE, (void (*)(void))BIO_free },
     { OSSL_FUNC_BIO_VPRINTF, (void (*)(void))BIO_vprintf },
     { OSSL_FUNC_BIO_VSNPRINTF, (void (*)(void))BIO_vsnprintf },

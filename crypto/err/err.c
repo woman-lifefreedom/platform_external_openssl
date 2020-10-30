@@ -75,8 +75,8 @@ static ERR_STRING_DATA ERR_str_libraries[] = {
     {ERR_PACK(ERR_LIB_SM2, 0, 0), "SM2 routines"},
     {ERR_PACK(ERR_LIB_ESS, 0, 0), "ESS routines"},
     {ERR_PACK(ERR_LIB_PROV, 0, 0), "Provider routines"},
-    {ERR_PACK(ERR_LIB_OSSL_SERIALIZER, 0, 0), "SERIALIZER routines"},
-    {ERR_PACK(ERR_LIB_OSSL_DESERIALIZER, 0, 0), "DESERIALIZER routines"},
+    {ERR_PACK(ERR_LIB_OSSL_ENCODER, 0, 0), "ENCODER routines"},
+    {ERR_PACK(ERR_LIB_OSSL_DECODER, 0, 0), "DECODER routines"},
     {ERR_PACK(ERR_LIB_HTTP, 0, 0), "HTTP routines"},
     {0, NULL},
 };
@@ -225,7 +225,7 @@ static void err_patch(int lib, ERR_STRING_DATA *str)
 }
 
 /*
- * Hash in |str| error strings. Assumes the URN_ONCE was done.
+ * Hash in |str| error strings. Assumes the RUN_ONCE was done.
  */
 static int err_load_strings(const ERR_STRING_DATA *str)
 {

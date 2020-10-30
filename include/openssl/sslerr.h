@@ -183,11 +183,13 @@ int ERR_load_SSL_strings(void);
 #  define SSL_F_SSL_CTX_USE_SERVERINFO_FILE                0
 #  define SSL_F_SSL_DANE_DUP                               0
 #  define SSL_F_SSL_DANE_ENABLE                            0
+#  define SSL_F_SSL_DECAPSULATE                            0
 #  define SSL_F_SSL_DERIVE                                 0
 #  define SSL_F_SSL_DO_CONFIG                              0
 #  define SSL_F_SSL_DO_HANDSHAKE                           0
 #  define SSL_F_SSL_DUP_CA_LIST                            0
 #  define SSL_F_SSL_ENABLE_CT                              0
+#  define SSL_F_SSL_ENCAPSULATE                            0
 #  define SSL_F_SSL_GENERATE_PKEY_GROUP                    0
 #  define SSL_F_SSL_GENERATE_SESSION_ID                    0
 #  define SSL_F_SSL_GET_NEW_SESSION                        0
@@ -634,6 +636,7 @@ int ERR_load_SSL_strings(void);
 # define SSL_R_NO_SHARED_GROUPS                           410
 # define SSL_R_NO_SHARED_SIGNATURE_ALGORITHMS             376
 # define SSL_R_NO_SRTP_PROFILES                           359
+# define SSL_R_NO_SUITABLE_DIGEST_ALGORITHM               297
 # define SSL_R_NO_SUITABLE_KEY_SHARE                      101
 # define SSL_R_NO_SUITABLE_SIGNATURE_ALGORITHM            118
 # define SSL_R_NO_VALID_SCTS                              216

@@ -19,11 +19,6 @@
 #include <openssl/cmp.h>
 #include <openssl/err.h>
 
-DEFINE_STACK_OF(OSSL_CRMF_MSG)
-DEFINE_STACK_OF(X509)
-DEFINE_STACK_OF(OSSL_CMP_ITAV)
-DEFINE_STACK_OF(OSSL_CMP_CERTSTATUS)
-
 /* the context for the generic CMP server */
 struct ossl_cmp_srv_ctx_st
 {
@@ -53,14 +48,14 @@ void OSSL_CMP_SRV_CTX_free(OSSL_CMP_SRV_CTX *srv_ctx)
     OPENSSL_free(srv_ctx);
 }
 
-OSSL_CMP_SRV_CTX *OSSL_CMP_SRV_CTX_new(void)
+OSSL_CMP_SRV_CTX *OSSL_CMP_SRV_CTX_new(OSSL_LIB_CTX *libctx, const char *propq)
 {
     OSSL_CMP_SRV_CTX *ctx = OPENSSL_zalloc(sizeof(OSSL_CMP_SRV_CTX));
 
     if (ctx == NULL)
         goto err;
 
-    if ((ctx->ctx = OSSL_CMP_CTX_new()) == NULL)
+    if ((ctx->ctx = OSSL_CMP_CTX_new(libctx, propq)) == NULL)
         goto err;
 
     /* all other elements are initialized to 0 or NULL, respectively */
@@ -206,7 +201,7 @@ static OSSL_CMP_MSG *process_cert_request(OSSL_CMP_SRV_CTX *srv_ctx,
         certReqId = OSSL_CRMF_MSG_get_certReqId(crm);
     }
 
-    if (!ossl_cmp_verify_popo(req, srv_ctx->acceptRAVerified)) {
+    if (!ossl_cmp_verify_popo(srv_ctx->ctx, req, srv_ctx->acceptRAVerified)) {
         /* Proof of possession could not be verified */
         si = OSSL_CMP_STATUSINFO_new(OSSL_CMP_PKISTATUS_rejection,
                                      1 << OSSL_CMP_PKIFAILUREINFO_badPOP,

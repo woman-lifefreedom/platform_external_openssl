@@ -75,6 +75,9 @@ int has_stdin_waiting(void);
 void corrupt_signature(const ASN1_STRING *signature);
 int set_cert_times(X509 *x, const char *startdate, const char *enddate,
                    int days);
+int set_crl_lastupdate(X509_CRL *crl, const char *lastupdate);
+int set_crl_nextupdate(X509_CRL *crl, const char *nextupdate,
+                       long days, long hours, long secs);
 
 typedef struct args_st {
     int size;
@@ -105,7 +108,7 @@ X509_REQ *load_csr(const char *file, int format, const char *desc);
 X509 *load_cert_pass(const char *uri, int maybe_stdin,
                      const char *pass, const char *desc);
 /* the format parameter is meanwhile not needed anymore and thus ignored */
-X509 *load_cert(const char *uri, int format, const char *desc);
+#define load_cert(uri, format, desc) load_cert_pass(uri, 0, NULL, desc)
 X509_CRL *load_crl(const char *uri, int format, const char *desc);
 void cleanse(char *str);
 void clear_free(char *str);
@@ -113,13 +116,19 @@ EVP_PKEY *load_key(const char *uri, int format, int maybe_stdin,
                    const char *pass, ENGINE *e, const char *desc);
 EVP_PKEY *load_pubkey(const char *uri, int format, int maybe_stdin,
                       const char *pass, ENGINE *e, const char *desc);
-int load_certs(const char *file, STACK_OF(X509) **certs, int format,
+int load_certs(const char *uri, STACK_OF(X509) **certs,
                const char *pass, const char *desc);
-int load_crls(const char *file, STACK_OF(X509_CRL) **crls, int format,
+int load_crls(const char *uri, STACK_OF(X509_CRL) **crls,
               const char *pass, const char *desc);
+int load_key_certs_crls(const char *uri, int maybe_stdin,
+                        const char *pass, const char *desc,
+                        EVP_PKEY **ppkey, EVP_PKEY **ppubkey,
+                        X509 **pcert, STACK_OF(X509) **pcerts,
+                        X509_CRL **pcrl, STACK_OF(X509_CRL) **pcrls);
 int load_key_cert_crl(const char *uri, int maybe_stdin,
                       const char *pass, const char *desc,
-                      EVP_PKEY **ppkey, X509 **pcert, X509_CRL **pcrl);
+                      EVP_PKEY **ppkey, EVP_PKEY **ppubkey,
+                      X509 **pcert, X509_CRL **pcrl);
 X509_STORE *setup_verify(const char *CAfile, int noCAfile,
                          const char *CApath, int noCApath,
                          const char *CAstore, int noCAstore);
@@ -142,6 +151,12 @@ __owur int ctx_set_ctlog_list_file(SSL_CTX *ctx, const char *path);
 ENGINE *setup_engine_methods(const char *id, unsigned int methods, int debug);
 # define setup_engine(e, debug) setup_engine_methods(e, (unsigned int)-1, debug)
 void release_engine(ENGINE *e);
+int init_engine(ENGINE *e);
+int finish_engine(ENGINE *e);
+EVP_PKEY *load_engine_private_key(ENGINE *e, const char *keyid,
+                                  const char *pass, const char *desc);
+EVP_PKEY *load_engine_public_key(ENGINE *e, const char *keyid,
+                                 const char *pass, const char *desc);
 
 # ifndef OPENSSL_NO_OCSP
 OCSP_RESPONSE *process_responder(OCSP_REQUEST *req,
@@ -209,7 +224,8 @@ int pkey_ctrl_string(EVP_PKEY_CTX *ctx, const char *value);
 int x509_ctrl_string(X509 *x, const char *value);
 int x509_req_ctrl_string(X509_REQ *x, const char *value);
 int init_gen_str(EVP_PKEY_CTX **pctx,
-                 const char *algname, ENGINE *e, int do_param);
+                 const char *algname, ENGINE *e, int do_param,
+                 OSSL_LIB_CTX *libctx, const char *propq);
 int do_X509_sign(X509 *x, EVP_PKEY *pkey, const EVP_MD *md,
                  STACK_OF(OPENSSL_STRING) *sigopts);
 int do_X509_verify(X509 *x, EVP_PKEY *pkey, STACK_OF(OPENSSL_STRING) *vfyopts);
@@ -292,15 +308,15 @@ typedef struct verify_options_st {
 
 extern VERIFY_CB_ARGS verify_args;
 
-OPENSSL_CTX *app_create_libctx(void);
-OPENSSL_CTX *app_get0_libctx(void);
+OSSL_LIB_CTX *app_create_libctx(void);
+OSSL_LIB_CTX *app_get0_libctx(void);
 OSSL_PARAM *app_params_new_from_opts(STACK_OF(OPENSSL_STRING) *opts,
                                      const OSSL_PARAM *paramdefs);
 void app_params_free(OSSL_PARAM *params);
-int app_provider_load(OPENSSL_CTX *libctx, const char *provider_name);
+int app_provider_load(OSSL_LIB_CTX *libctx, const char *provider_name);
 void app_providers_cleanup(void);
 
-OPENSSL_CTX *app_get0_libctx(void);
+OSSL_LIB_CTX *app_get0_libctx(void);
 const char *app_get0_propq(void);
 
 #endif

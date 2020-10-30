@@ -25,8 +25,6 @@
 
 #include "http_local.h"
 
-DEFINE_STACK_OF(CONF_VALUE)
-
 #define HTTP_PREFIX "HTTP/"
 #define HTTP_VERSION_PATT "1." /* allow 1.x */
 #define HTTP_VERSION_STR_LEN 3
@@ -1005,7 +1003,8 @@ BIO *OSSL_HTTP_get(const char *url, const char *proxy, const char *no_proxy,
         return NULL;
 
     for (;;) {
-        if (!OSSL_HTTP_parse_url(current_url, &host, &port, &path, &use_ssl))
+        if (!OSSL_HTTP_parse_url(current_url, &host, &port, NULL /* port_num */,
+                                 &path, &use_ssl))
             break;
 
      new_rpath:

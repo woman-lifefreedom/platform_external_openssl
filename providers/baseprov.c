@@ -38,6 +38,7 @@ static const OSSL_PARAM base_param_types[] = {
     OSSL_PARAM_DEFN(OSSL_PROV_PARAM_NAME, OSSL_PARAM_UTF8_PTR, NULL, 0),
     OSSL_PARAM_DEFN(OSSL_PROV_PARAM_VERSION, OSSL_PARAM_UTF8_PTR, NULL, 0),
     OSSL_PARAM_DEFN(OSSL_PROV_PARAM_BUILDINFO, OSSL_PARAM_UTF8_PTR, NULL, 0),
+    OSSL_PARAM_DEFN(OSSL_PROV_PARAM_STATUS, OSSL_PARAM_INTEGER, NULL, 0),
     OSSL_PARAM_END
 };
 
@@ -60,49 +61,63 @@ static int base_get_params(void *provctx, OSSL_PARAM params[])
     p = OSSL_PARAM_locate(params, OSSL_PROV_PARAM_BUILDINFO);
     if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, OPENSSL_FULL_VERSION_STR))
         return 0;
+    p = OSSL_PARAM_locate(params, OSSL_PROV_PARAM_STATUS);
+    if (p != NULL && !OSSL_PARAM_set_int(p, ossl_prov_is_running()))
+        return 0;
 
     return 1;
 }
 
-static const OSSL_ALGORITHM base_serializer[] = {
-#define SER(name, fips, format, type, func_table)                           \
+static const OSSL_ALGORITHM base_encoder[] = {
+#define ENCODER(name, _fips, _output, func_table)                           \
     { name,                                                                 \
-      "provider=base,fips=" fips ",format=" format ",type=" type,           \
+      "provider=base,fips=" _fips ",output=" _output,                       \
       (func_table) }
 
-#include "serializers.inc"
+#include "encoders.inc"
     { NULL, NULL, NULL }
 };
-#undef SER
+#undef ENCODER
 
-static const OSSL_ALGORITHM base_deserializer[] = {
-#define DESER(name, fips, input, func_table)                                \
+static const OSSL_ALGORITHM base_decoder[] = {
+#define DECODER(name, _fips, _input, func_table)                            \
     { name,                                                                 \
-      "provider=base,fips=" fips ",input=" input,                           \
+      "provider=base,fips=" _fips ",input=" _input,                         \
       (func_table) }
 
-#include "deserializers.inc"
+#include "decoders.inc"
     { NULL, NULL, NULL }
 };
-#undef DESER
+#undef DECODER
+
+static const OSSL_ALGORITHM base_store[] = {
+#define STORE(name, _fips, func_table)                           \
+    { name, "provider=base,fips=" _fips, (func_table) },
+
+#include "stores.inc"
+    { NULL, NULL, NULL }
+#undef STORE
+};
 
 static const OSSL_ALGORITHM *base_query(void *provctx, int operation_id,
                                          int *no_cache)
 {
     *no_cache = 0;
     switch (operation_id) {
-    case OSSL_OP_SERIALIZER:
-        return base_serializer;
-    case OSSL_OP_DESERIALIZER:
-        return base_deserializer;
+    case OSSL_OP_ENCODER:
+        return base_encoder;
+    case OSSL_OP_DECODER:
+        return base_decoder;
+    case OSSL_OP_STORE:
+        return base_store;
     }
     return NULL;
 }
 
 static void base_teardown(void *provctx)
 {
-    BIO_meth_free(PROV_CTX_get0_core_bio_method(provctx));
-    PROV_CTX_free(provctx);
+    BIO_meth_free(ossl_prov_ctx_get0_core_bio_method(provctx));
+    ossl_prov_ctx_free(provctx);
 }
 
 /* Functions we provide to the core */
@@ -121,7 +136,7 @@ int ossl_base_provider_init(const OSSL_CORE_HANDLE *handle,
                             const OSSL_DISPATCH *in, const OSSL_DISPATCH **out,
                             void **provctx)
 {
-    OSSL_FUNC_core_get_library_context_fn *c_get_libctx = NULL;
+    OSSL_FUNC_core_get_libctx_fn *c_get_libctx = NULL;
     BIO_METHOD *corebiometh;
 
     if (!ossl_prov_bio_from_dispatch(in))
@@ -134,8 +149,8 @@ int ossl_base_provider_init(const OSSL_CORE_HANDLE *handle,
         case OSSL_FUNC_CORE_GET_PARAMS:
             c_get_params = OSSL_FUNC_core_get_params(in);
             break;
-        case OSSL_FUNC_CORE_GET_LIBRARY_CONTEXT:
-            c_get_libctx = OSSL_FUNC_core_get_library_context(in);
+        case OSSL_FUNC_CORE_GET_LIBCTX:
+            c_get_libctx = OSSL_FUNC_core_get_libctx(in);
             break;
         default:
             /* Just ignore anything we don't understand */
@@ -154,15 +169,16 @@ int ossl_base_provider_init(const OSSL_CORE_HANDLE *handle,
      * This only works for built-in providers.  Most providers should
      * create their own library context.
      */
-    if ((*provctx = PROV_CTX_new()) == NULL
+    if ((*provctx = ossl_prov_ctx_new()) == NULL
             || (corebiometh = bio_prov_init_bio_method()) == NULL) {
-        PROV_CTX_free(*provctx);
+        ossl_prov_ctx_free(*provctx);
         *provctx = NULL;
         return 0;
     }
-    PROV_CTX_set0_library_context(*provctx, (OPENSSL_CTX *)c_get_libctx(handle));
-    PROV_CTX_set0_handle(*provctx, handle);
-    PROV_CTX_set0_core_bio_method(*provctx, corebiometh);
+    ossl_prov_ctx_set0_libctx(*provctx,
+                                       (OSSL_LIB_CTX *)c_get_libctx(handle));
+    ossl_prov_ctx_set0_handle(*provctx, handle);
+    ossl_prov_ctx_set0_core_bio_method(*provctx, corebiometh);
 
     *out = base_dispatch_table;
 

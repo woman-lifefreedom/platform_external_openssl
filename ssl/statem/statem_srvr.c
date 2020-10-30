@@ -26,10 +26,6 @@
 #include <openssl/core_names.h>
 #include <openssl/asn1t.h>
 
-DEFINE_STACK_OF(X509)
-DEFINE_STACK_OF(SSL_COMP)
-DEFINE_STACK_OF_CONST(SSL_CIPHER)
-
 #define TICKET_NONCE_SIZE       8
 
 typedef struct {
@@ -2809,7 +2805,7 @@ int tls_construct_server_key_exchange(SSL *s, WPACKET *pkt)
 
         if (EVP_DigestSignInit_ex(md_ctx, &pctx,
                                   md == NULL ? NULL : EVP_MD_name(md),
-                                  s->ctx->propq, pkey, s->ctx->libctx) <= 0) {
+                                  s->ctx->libctx, s->ctx->propq, pkey) <= 0) {
             SSLfatal(s, SSL_AD_INTERNAL_ERROR,
                      SSL_F_TLS_CONSTRUCT_SERVER_KEY_EXCHANGE,
                      ERR_R_INTERNAL_ERROR);
@@ -3676,7 +3672,7 @@ MSG_PROCESS_RETURN tls_process_client_certificate(SSL *s, PACKET *pkt)
         }
 
         certstart = certbytes;
-        x = X509_new_with_libctx(s->ctx->libctx, s->ctx->propq);
+        x = X509_new_ex(s->ctx->libctx, s->ctx->propq);
         if (x == NULL) {
             SSLfatal(s, SSL_AD_DECODE_ERROR,
                      SSL_F_TLS_PROCESS_CLIENT_CERTIFICATE, ERR_R_MALLOC_FAILURE);

@@ -56,6 +56,7 @@
 #include "internal/numbers.h"
 #include "crypto/evp.h"
 #include "prov/provider_ctx.h"
+#include "prov/providercommon.h"
 #include "prov/providercommonerr.h"
 #include "prov/implementations.h"
 #include "prov/provider_util.h"
@@ -67,6 +68,8 @@ static OSSL_FUNC_kdf_reset_fn kdf_tls1_prf_reset;
 static OSSL_FUNC_kdf_derive_fn kdf_tls1_prf_derive;
 static OSSL_FUNC_kdf_settable_ctx_params_fn kdf_tls1_prf_settable_ctx_params;
 static OSSL_FUNC_kdf_set_ctx_params_fn kdf_tls1_prf_set_ctx_params;
+static OSSL_FUNC_kdf_gettable_ctx_params_fn kdf_tls1_prf_gettable_ctx_params;
+static OSSL_FUNC_kdf_get_ctx_params_fn kdf_tls1_prf_get_ctx_params;
 
 static int tls1_prf_alg(EVP_MAC_CTX *mdctx, EVP_MAC_CTX *sha1ctx,
                         const unsigned char *sec, size_t slen,
@@ -95,6 +98,9 @@ typedef struct {
 static void *kdf_tls1_prf_new(void *provctx)
 {
     TLS1_PRF *ctx;
+
+    if (!ossl_prov_is_running())
+        return NULL;
 
     if ((ctx = OPENSSL_zalloc(sizeof(*ctx))) == NULL)
         ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
@@ -130,6 +136,9 @@ static int kdf_tls1_prf_derive(void *vctx, unsigned char *key,
 {
     TLS1_PRF *ctx = (TLS1_PRF *)vctx;
 
+    if (!ossl_prov_is_running())
+        return 0;
+
     if (ctx->P_hash == NULL) {
         ERR_raise(ERR_LIB_PROV, PROV_R_MISSING_MESSAGE_DIGEST);
         return 0;
@@ -140,6 +149,10 @@ static int kdf_tls1_prf_derive(void *vctx, unsigned char *key,
     }
     if (ctx->seedlen == 0) {
         ERR_raise(ERR_LIB_PROV, PROV_R_MISSING_SEED);
+        return 0;
+    }
+    if (keylen == 0) {
+        ERR_raise(ERR_LIB_PROV, PROV_R_INVALID_KEY_LENGTH);
         return 0;
     }
 
@@ -153,7 +166,7 @@ static int kdf_tls1_prf_set_ctx_params(void *vctx, const OSSL_PARAM params[])
 {
     const OSSL_PARAM *p;
     TLS1_PRF *ctx = vctx;
-    OPENSSL_CTX *libctx = PROV_LIBRARY_CONTEXT_OF(ctx->provctx);
+    OSSL_LIB_CTX *libctx = PROV_LIBCTX_OF(ctx->provctx);
 
     if ((p = OSSL_PARAM_locate_const(params, OSSL_KDF_PARAM_DIGEST)) != NULL) {
         if (strcasecmp(p->data, SN_md5_sha1) == 0) {
@@ -181,9 +194,6 @@ static int kdf_tls1_prf_set_ctx_params(void *vctx, const OSSL_PARAM params[])
     }
     /* The seed fields concatenate, so process them all */
     if ((p = OSSL_PARAM_locate_const(params, OSSL_KDF_PARAM_SEED)) != NULL) {
-        OPENSSL_cleanse(ctx->seed, ctx->seedlen);
-        ctx->seedlen = 0;
-
         for (; p != NULL; p = OSSL_PARAM_locate_const(p + 1,
                                                       OSSL_KDF_PARAM_SEED)) {
             const void *q = ctx->seed + ctx->seedlen;
@@ -201,7 +211,7 @@ static int kdf_tls1_prf_set_ctx_params(void *vctx, const OSSL_PARAM params[])
     return 1;
 }
 
-static const OSSL_PARAM *kdf_tls1_prf_settable_ctx_params(void)
+static const OSSL_PARAM *kdf_tls1_prf_settable_ctx_params(ossl_unused void *ctx)
 {
     static const OSSL_PARAM known_settable_ctx_params[] = {
         OSSL_PARAM_utf8_string(OSSL_KDF_PARAM_PROPERTIES, NULL, 0),
@@ -222,7 +232,7 @@ static int kdf_tls1_prf_get_ctx_params(void *vctx, OSSL_PARAM params[])
     return -2;
 }
 
-static const OSSL_PARAM *kdf_tls1_prf_gettable_ctx_params(void)
+static const OSSL_PARAM *kdf_tls1_prf_gettable_ctx_params(ossl_unused void *ctx)
 {
     static const OSSL_PARAM known_gettable_ctx_params[] = {
         OSSL_PARAM_size_t(OSSL_KDF_PARAM_SIZE, NULL),
@@ -231,7 +241,7 @@ static const OSSL_PARAM *kdf_tls1_prf_gettable_ctx_params(void)
     return known_gettable_ctx_params;
 }
 
-const OSSL_DISPATCH kdf_tls1_prf_functions[] = {
+const OSSL_DISPATCH ossl_kdf_tls1_prf_functions[] = {
     { OSSL_FUNC_KDF_NEWCTX, (void(*)(void))kdf_tls1_prf_new },
     { OSSL_FUNC_KDF_FREECTX, (void(*)(void))kdf_tls1_prf_free },
     { OSSL_FUNC_KDF_RESET, (void(*)(void))kdf_tls1_prf_reset },

@@ -17,6 +17,7 @@
 
 #include "prov/providercommonerr.h"
 #include "prov/implementations.h"
+#include "prov/providercommon.h"
 
 /*
  * Forward declaration of everything implemented here.  This is not strictly
@@ -43,8 +44,11 @@ static size_t poly1305_size(void);
 
 static void *poly1305_new(void *provctx)
 {
-    struct poly1305_data_st *ctx = OPENSSL_zalloc(sizeof(*ctx));
+    struct poly1305_data_st *ctx;
 
+    if (!ossl_prov_is_running())
+        return NULL;
+    ctx = OPENSSL_zalloc(sizeof(*ctx));
     if (ctx != NULL)
         ctx->provctx = provctx;
     return ctx;
@@ -58,8 +62,11 @@ static void poly1305_free(void *vmacctx)
 static void *poly1305_dup(void *vsrc)
 {
     struct poly1305_data_st *src = vsrc;
-    struct poly1305_data_st *dst = poly1305_new(src->provctx);
+    struct poly1305_data_st *dst;
 
+    if (!ossl_prov_is_running())
+        return NULL;
+    dst = poly1305_new(src->provctx);
     if (dst == NULL)
         return NULL;
 
@@ -75,13 +82,16 @@ static size_t poly1305_size(void)
 static int poly1305_init(void *vmacctx)
 {
     /* initialize the context in MAC_ctrl function */
-    return 1;
+    return ossl_prov_is_running();
 }
 
 static int poly1305_update(void *vmacctx, const unsigned char *data,
                        size_t datalen)
 {
     struct poly1305_data_st *ctx = vmacctx;
+
+    if (datalen == 0)
+        return 1;
 
     /* poly1305 has nothing to return in its update function */
     Poly1305_Update(&ctx->poly1305, data, datalen);
@@ -93,7 +103,10 @@ static int poly1305_final(void *vmacctx, unsigned char *out, size_t *outl,
 {
     struct poly1305_data_st *ctx = vmacctx;
 
+    if (!ossl_prov_is_running())
+        return 0;
     Poly1305_Final(&ctx->poly1305, out);
+    *outl = poly1305_size();
     return 1;
 }
 
@@ -101,7 +114,7 @@ static const OSSL_PARAM known_gettable_params[] = {
     OSSL_PARAM_size_t(OSSL_MAC_PARAM_SIZE, NULL),
     OSSL_PARAM_END
 };
-static const OSSL_PARAM *poly1305_gettable_params(void)
+static const OSSL_PARAM *poly1305_gettable_params(void *provctx)
 {
     return known_gettable_params;
 }
@@ -120,7 +133,7 @@ static const OSSL_PARAM known_settable_ctx_params[] = {
     OSSL_PARAM_octet_string(OSSL_MAC_PARAM_KEY, NULL, 0),
     OSSL_PARAM_END
 };
-static const OSSL_PARAM *poly1305_settable_ctx_params(void)
+static const OSSL_PARAM *poly1305_settable_ctx_params(ossl_unused void *provctx)
 {
     return known_settable_ctx_params;
 }
@@ -141,7 +154,7 @@ static int poly1305_set_ctx_params(void *vmacctx, const OSSL_PARAM *params)
     return 1;
 }
 
-const OSSL_DISPATCH poly1305_functions[] = {
+const OSSL_DISPATCH ossl_poly1305_functions[] = {
     { OSSL_FUNC_MAC_NEWCTX, (void (*)(void))poly1305_new },
     { OSSL_FUNC_MAC_DUPCTX, (void (*)(void))poly1305_dup },
     { OSSL_FUNC_MAC_FREECTX, (void (*)(void))poly1305_free },

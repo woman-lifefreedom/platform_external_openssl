@@ -166,7 +166,7 @@ OSSL_PROVIDER *EVP_KEYEXCH_provider(const EVP_KEYEXCH *exchange)
     return exchange->prov;
 }
 
-EVP_KEYEXCH *EVP_KEYEXCH_fetch(OPENSSL_CTX *ctx, const char *algorithm,
+EVP_KEYEXCH *EVP_KEYEXCH_fetch(OSSL_LIB_CTX *ctx, const char *algorithm,
                                const char *properties)
 {
     return evp_generic_fetch(ctx, OSSL_OP_KEYEXCH, algorithm, properties,
@@ -197,16 +197,36 @@ int EVP_PKEY_derive_init(EVP_PKEY_CTX *ctx)
      */
     ERR_set_mark();
 
-    if (ctx->keymgmt == NULL)
+    if (evp_pkey_ctx_is_legacy(ctx))
         goto legacy;
 
     /*
      * Ensure that the key is provided, either natively, or as a cached export.
-     *  If not, go legacy
+     * If not, goto legacy
      */
     tmp_keymgmt = ctx->keymgmt;
-    provkey = evp_pkey_export_to_provider(ctx->pkey, ctx->libctx,
-                                          &tmp_keymgmt, ctx->propquery);
+    if (ctx->pkey == NULL) {
+        /*
+         * Some algorithms (e.g. legacy KDFs) don't have a pkey - so we create
+         * a blank one.
+         */
+        EVP_PKEY *pkey = EVP_PKEY_new();
+
+        if (pkey == NULL || !EVP_PKEY_set_type_by_keymgmt(pkey, tmp_keymgmt)) {
+            ERR_clear_last_mark();
+            EVP_PKEY_free(pkey);
+            ERR_raise(ERR_LIB_EVP, EVP_R_INITIALIZATION_ERROR);
+            goto err;
+        }
+        provkey = pkey->keydata = evp_keymgmt_newdata(tmp_keymgmt);
+        if (provkey == NULL)
+            EVP_PKEY_free(pkey);
+        else
+            ctx->pkey = pkey;
+    } else {
+        provkey = evp_pkey_export_to_provider(ctx->pkey, ctx->libctx,
+                                            &tmp_keymgmt, ctx->propquery);
+    }
     if (provkey == NULL)
         goto legacy;
     if (!EVP_KEYMGMT_up_ref(tmp_keymgmt)) {
@@ -437,7 +457,7 @@ int EVP_KEYEXCH_is_a(const EVP_KEYEXCH *keyexch, const char *name)
     return evp_is_a(keyexch->prov, keyexch->name_id, NULL, name);
 }
 
-void EVP_KEYEXCH_do_all_provided(OPENSSL_CTX *libctx,
+void EVP_KEYEXCH_do_all_provided(OSSL_LIB_CTX *libctx,
                                  void (*fn)(EVP_KEYEXCH *keyexch, void *arg),
                                  void *arg)
 {
@@ -453,4 +473,25 @@ void EVP_KEYEXCH_names_do_all(const EVP_KEYEXCH *keyexch,
 {
     if (keyexch->prov != NULL)
         evp_names_do_all(keyexch->prov, keyexch->name_id, fn, data);
+}
+
+const OSSL_PARAM *EVP_KEYEXCH_gettable_ctx_params(const EVP_KEYEXCH *keyexch)
+{
+    void *provctx;
+
+    if (keyexch == NULL || keyexch->gettable_ctx_params == NULL)
+        return NULL;
+
+    provctx = ossl_provider_ctx(EVP_KEYEXCH_provider(keyexch));
+    return keyexch->gettable_ctx_params(provctx);
+}
+
+const OSSL_PARAM *EVP_KEYEXCH_settable_ctx_params(const EVP_KEYEXCH *keyexch)
+{
+    void *provctx;
+
+    if (keyexch == NULL || keyexch->settable_ctx_params == NULL)
+        return NULL;
+    provctx = ossl_provider_ctx(EVP_KEYEXCH_provider(keyexch));
+    return keyexch->settable_ctx_params(provctx);
 }

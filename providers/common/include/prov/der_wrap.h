@@ -18,26 +18,26 @@
  */
 #define DER_OID_V_id_alg_CMS3DESwrap DER_P_OBJECT, 11, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x10, 0x03, 0x06
 #define DER_OID_SZ_id_alg_CMS3DESwrap 13
-extern const unsigned char der_oid_id_alg_CMS3DESwrap[DER_OID_SZ_id_alg_CMS3DESwrap];
+extern const unsigned char ossl_der_oid_id_alg_CMS3DESwrap[DER_OID_SZ_id_alg_CMS3DESwrap];
 
 /*
  * id-aes128-wrap OBJECT IDENTIFIER ::= { aes 5 }
  */
 #define DER_OID_V_id_aes128_wrap DER_P_OBJECT, 9, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x05
 #define DER_OID_SZ_id_aes128_wrap 11
-extern const unsigned char der_oid_id_aes128_wrap[DER_OID_SZ_id_aes128_wrap];
+extern const unsigned char ossl_der_oid_id_aes128_wrap[DER_OID_SZ_id_aes128_wrap];
 
 /*
  * id-aes192-wrap OBJECT IDENTIFIER ::= { aes 25 }
  */
 #define DER_OID_V_id_aes192_wrap DER_P_OBJECT, 9, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x19
 #define DER_OID_SZ_id_aes192_wrap 11
-extern const unsigned char der_oid_id_aes192_wrap[DER_OID_SZ_id_aes192_wrap];
+extern const unsigned char ossl_der_oid_id_aes192_wrap[DER_OID_SZ_id_aes192_wrap];
 
 /*
  * id-aes256-wrap OBJECT IDENTIFIER ::= { aes 45 }
  */
 #define DER_OID_V_id_aes256_wrap DER_P_OBJECT, 9, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x2D
 #define DER_OID_SZ_id_aes256_wrap 11
-extern const unsigned char der_oid_id_aes256_wrap[DER_OID_SZ_id_aes256_wrap];
+extern const unsigned char ossl_der_oid_id_aes256_wrap[DER_OID_SZ_id_aes256_wrap];
 

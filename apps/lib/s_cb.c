@@ -26,11 +26,6 @@
 
 #define COOKIE_SECRET_LENGTH    16
 
-DEFINE_STACK_OF(X509)
-DEFINE_STACK_OF(X509_CRL)
-DEFINE_STACK_OF(X509_NAME)
-DEFINE_STACK_OF_STRING()
-
 VERIFY_CB_ARGS verify_args = { -1, 0, X509_V_OK, 0 };
 
 #ifndef OPENSSL_NO_SOCK
@@ -570,8 +565,8 @@ void msg_cb(int write_p, int version, int content_type, const void *buf,
 {
     BIO *bio = arg;
     const char *str_write_p = write_p ? ">>>" : "<<<";
-    const char *str_version = lookup(version, ssl_versions, "???");
-    const char *str_content_type = "", *str_details1 = "", *str_details2 = "";
+    char tmpbuf[128];
+    const char *str_version, *str_content_type = "", *str_details1 = "", *str_details2 = "";
     const unsigned char* bp = buf;
 
     if (version == SSL3_VERSION ||
@@ -580,11 +575,14 @@ void msg_cb(int write_p, int version, int content_type, const void *buf,
         version == TLS1_2_VERSION ||
         version == TLS1_3_VERSION ||
         version == DTLS1_VERSION || version == DTLS1_BAD_VER) {
+        str_version = lookup(version, ssl_versions, "???");
         switch (content_type) {
-        case 20:
+        case SSL3_RT_CHANGE_CIPHER_SPEC:
+            /* type 20 */
             str_content_type = ", ChangeCipherSpec";
             break;
-        case 21:
+        case SSL3_RT_ALERT:
+            /* type 21 */
             str_content_type = ", Alert";
             str_details1 = ", ???";
             if (len == 2) {
@@ -599,16 +597,32 @@ void msg_cb(int write_p, int version, int content_type, const void *buf,
                 str_details2 = lookup((int)bp[1], alert_types, " ???");
             }
             break;
-        case 22:
+        case SSL3_RT_HANDSHAKE:
+            /* type 22 */
             str_content_type = ", Handshake";
             str_details1 = "???";
             if (len > 0)
                 str_details1 = lookup((int)bp[0], handshakes, "???");
             break;
-        case 23:
+        case SSL3_RT_APPLICATION_DATA:
+            /* type 23 */
             str_content_type = ", ApplicationData";
             break;
+        case SSL3_RT_HEADER:
+            /* type 256 */
+            str_content_type = ", RecordHeader";
+            break;
+        case SSL3_RT_INNER_CONTENT_TYPE:
+            /* type 257 */
+            str_content_type = ", InnerContent";
+            break;
+        default:
+            BIO_snprintf(tmpbuf, sizeof(tmpbuf)-1, ", Unknown (content_type=%d)", content_type);
+            str_content_type = tmpbuf;
         }
+    } else {
+        BIO_snprintf(tmpbuf, sizeof(tmpbuf)-1, "Not TLS data or unknown version (version=%d, content_type=%d)", version, content_type);
+        str_version = tmpbuf;
     }
 
     BIO_printf(bio, "%s %s%s [length %04lx]%s%s\n", str_write_p, str_version,
@@ -772,6 +786,7 @@ int generate_cookie_callback(SSL *ssl, unsigned char *cookie,
     /* Create buffer with peer's address and port */
     if (!BIO_ADDR_rawaddress(peer, NULL, &length)) {
         BIO_printf(bio_err, "Failed getting peer address\n");
+        BIO_ADDR_free(lpeer);
         return 0;
     }
     OPENSSL_assert(length != 0);
@@ -1032,16 +1047,15 @@ int load_excert(SSL_EXCERT **pexc)
             return 0;
         if (exc->keyfile != NULL) {
             exc->key = load_key(exc->keyfile, exc->keyform,
-                                0, NULL, NULL, "Server Key");
+                                0, NULL, NULL, "server key");
         } else {
             exc->key = load_key(exc->certfile, exc->certform,
-                                0, NULL, NULL, "Server Key");
+                                0, NULL, NULL, "server key");
         }
         if (exc->key == NULL)
             return 0;
         if (exc->chainfile != NULL) {
-            if (!load_certs(exc->chainfile, &exc->chain, FORMAT_PEM, NULL,
-                            "Server Chain"))
+            if (!load_certs(exc->chainfile, &exc->chain, NULL, "server chain"))
                 return 0;
         }
     }

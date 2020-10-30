@@ -142,7 +142,7 @@ __owur static ossl_inline int siv128_do_encrypt(EVP_CIPHER_CTX *ctx, unsigned ch
  */
 SIV128_CONTEXT *CRYPTO_siv128_new(const unsigned char *key, int klen,
                                   EVP_CIPHER *cbc, EVP_CIPHER *ctr,
-                                  OPENSSL_CTX *libctx, const char *propq)
+                                  OSSL_LIB_CTX *libctx, const char *propq)
 {
     SIV128_CONTEXT *ctx;
     int ret;
@@ -162,19 +162,16 @@ SIV128_CONTEXT *CRYPTO_siv128_new(const unsigned char *key, int klen,
  */
 int CRYPTO_siv128_init(SIV128_CONTEXT *ctx, const unsigned char *key, int klen,
                        const EVP_CIPHER *cbc, const EVP_CIPHER *ctr,
-                       OPENSSL_CTX *libctx, const char *propq)
+                       OSSL_LIB_CTX *libctx, const char *propq)
 {
     static const unsigned char zero[SIV_LEN] = { 0 };
     size_t out_len = SIV_LEN;
     EVP_MAC_CTX *mac_ctx = NULL;
     OSSL_PARAM params[3];
-    const char *cbc_name = EVP_CIPHER_name(cbc);
+    const char *cbc_name;
 
-    params[0] = OSSL_PARAM_construct_utf8_string(OSSL_MAC_PARAM_CIPHER,
-                                                 (char *)cbc_name, 0);
-    params[1] = OSSL_PARAM_construct_octet_string(OSSL_MAC_PARAM_KEY,
-                                                  (void *)key, klen);
-    params[2] = OSSL_PARAM_construct_end();
+    if (ctx == NULL)
+        return 0;
 
     memset(&ctx->d, 0, sizeof(ctx->d));
     EVP_CIPHER_CTX_free(ctx->cipher_ctx);
@@ -184,8 +181,17 @@ int CRYPTO_siv128_init(SIV128_CONTEXT *ctx, const unsigned char *key, int klen,
     ctx->cipher_ctx = NULL;
     ctx->mac_ctx_init = NULL;
 
-    if (key == NULL || cbc == NULL || ctr == NULL
-            || (ctx->cipher_ctx = EVP_CIPHER_CTX_new()) == NULL
+    if (key == NULL || cbc == NULL || ctr == NULL)
+        return 0;
+
+    cbc_name = EVP_CIPHER_name(cbc);
+    params[0] = OSSL_PARAM_construct_utf8_string(OSSL_MAC_PARAM_CIPHER,
+                                                 (char *)cbc_name, 0);
+    params[1] = OSSL_PARAM_construct_octet_string(OSSL_MAC_PARAM_KEY,
+                                                  (void *)key, klen);
+    params[2] = OSSL_PARAM_construct_end();
+
+    if ((ctx->cipher_ctx = EVP_CIPHER_CTX_new()) == NULL
             || (ctx->mac =
                 EVP_MAC_fetch(libctx, OSSL_MAC_NAME_CMAC, propq)) == NULL
             || (ctx->mac_ctx_init = EVP_MAC_CTX_new(ctx->mac)) == NULL

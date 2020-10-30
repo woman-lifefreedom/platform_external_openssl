@@ -339,7 +339,7 @@ void OPENSSL_cleanup(void)
 
     /*
      * TODO(3.0): This function needs looking at with a view to moving most/all
-     * of this into onfree handlers in OPENSSL_CTX.
+     * of this into onfree handlers in OSSL_LIB_CTX.
      */
 
     /* If we've not been inited then no need to deinit */
@@ -396,7 +396,7 @@ void OPENSSL_cleanup(void)
      * - rand_cleanup_int could call an ENGINE's RAND cleanup function so
      * must be called before engine_cleanup_int()
      * - ENGINEs use CRYPTO_EX_DATA and therefore, must be cleaned up
-     * before the ex data handlers are wiped during default openssl_ctx deinit.
+     * before the ex data handlers are wiped during default ossl_lib_ctx deinit.
      * - conf_modules_free_int() can end up in ENGINE code so must be called
      * before engine_cleanup_int()
      * - ENGINEs and additional EVP algorithms might use added OIDs names so
@@ -412,11 +412,14 @@ void OPENSSL_cleanup(void)
     OSSL_TRACE(INIT, "OPENSSL_cleanup: engine_cleanup_int()\n");
     engine_cleanup_int();
 #endif
+
+#ifndef OPENSSL_NO_DEPRECATED_3_0
     OSSL_TRACE(INIT, "OPENSSL_cleanup: ossl_store_cleanup_int()\n");
     ossl_store_cleanup_int();
+#endif
 
-    OSSL_TRACE(INIT, "OPENSSL_cleanup: openssl_ctx_default_deinit()\n");
-    openssl_ctx_default_deinit();
+    OSSL_TRACE(INIT, "OPENSSL_cleanup: ossl_lib_ctx_default_deinit()\n");
+    ossl_lib_ctx_default_deinit();
 
     ossl_cleanup_thread();
 
@@ -455,7 +458,7 @@ int OPENSSL_init_crypto(uint64_t opts, const OPENSSL_INIT_SETTINGS *settings)
 {
     /*
      * TODO(3.0): This function needs looking at with a view to moving most/all
-     * of this into OPENSSL_CTX.
+     * of this into OSSL_LIB_CTX.
      */
 
     if (stopped) {

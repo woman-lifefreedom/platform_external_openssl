@@ -260,8 +260,11 @@ function generate_build_config_headers() {
   make include/openssl/opensslv.h
   make include/crypto/bn_conf.h
   make include/crypto/dso_conf.h
-  make providers/common/include/prov/der_ec.h providers/common/include/prov/der_dsa.h providers/common/include/prov/der_rsa.h providers/common/include/prov/der_digests.h providers/common/include/prov/der_wrap.h
-  make providers/common/der/der_digests_gen.c providers/common/der/der_ec_gen.c providers/common/der/der_dsa_gen.c providers/common/der/der_rsa_gen.c providers/common/der/der_wrap_gen.c
+  make providers/common/include/prov/der_ec.h providers/common/include/prov/der_ecx.h providers/common/include/prov/der_sm2.h providers/common/include/prov/der_dsa.h providers/common/include/prov/der_rsa.h providers/common/include/prov/der_digests.h providers/common/include/prov/der_wrap.h
+  make providers/common/der/der_digests_gen.c providers/common/der/der_ecx_gen.c providers/common/der/der_ec_gen.c providers/common/der/der_dsa_gen.c  providers/common/der/der_rsa_gen.c providers/common/der/der_sm2_gen.c providers/common/der/der_wrap_gen.c
+
+ make include/openssl/asn1.h include/openssl/asn1t.h include/openssl/bio.h include/openssl/cmp.h include/openssl/cms.h include/openssl/conf.h include/openssl/configuration.h include/openssl/crmf.h include/openssl/crypto.h include/openssl/ct.h include/openssl/err.h include/openssl/ess.h include/openssl/fipskey.h include/openssl/ocsp.h include/openssl/opensslv.h include/openssl/pkcs12.h include/openssl/pkcs7.h include/openssl/safestack.h include/openssl/srp.h include/openssl/ssl.h include/openssl/ui.h include/openssl/x509.h include/openssl/x509_vfy.h include/openssl/x509v3.h
+
 
   rm -f apps/CA.pl.bak openssl/opensslconf.h.bak
   mv -f include/crypto/bn_conf.h include/crypto/bn_conf-$outname.h
@@ -627,22 +630,6 @@ function import() {
   gen_asm_x86_64 crypto/ec/asm/x25519-x86_64.pl
 
   
-  # Setup android.testssl directory
-  mkdir android.testssl
-  cat test/testssl | \
-    sed 's#../util/shlib_wrap.sh ./ssltest#adb shell /system/bin/ssltest#' | \
-    sed 's#../util/shlib_wrap.sh ../apps/openssl#adb shell /system/bin/openssl#' | \
-    sed 's#adb shell /system/bin/openssl no-dh#[ `adb shell /system/bin/openssl no-dh` = no-dh ]#' | \
-    sed 's#adb shell /system/bin/openssl no-rsa#[ `adb shell /system/bin/openssl no-rsa` = no-dh ]#' | \
-    sed 's#../apps/server2.pem#/sdcard/android.testssl/server2.pem#' | \
-    cat > \
-    android.testssl/testssl
-  chmod +x android.testssl/testssl
-  cat test/Uss.cnf | sed 's#./.rnd#/sdcard/android.testssl/.rnd#' >> android.testssl/Uss.cnf
-  cat test/CAss.cnf | sed 's#./.rnd#/sdcard/android.testssl/.rnd#' >> android.testssl/CAss.cnf
-  cp apps/server2.pem android.testssl/
-  cp ../patches/testssl.sh android.testssl/
-
   cd ..
 
   generate_config_mk Crypto-config-target.mk CRYPTO target

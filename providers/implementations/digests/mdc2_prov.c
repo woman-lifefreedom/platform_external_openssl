@@ -30,7 +30,7 @@ static const OSSL_PARAM known_mdc2_settable_ctx_params[] = {
     OSSL_PARAM_END
 };
 
-static const OSSL_PARAM *mdc2_settable_ctx_params(void)
+static const OSSL_PARAM *mdc2_settable_ctx_params(ossl_unused void *provctx)
 {
     return known_mdc2_settable_ctx_params;
 }
@@ -51,7 +51,7 @@ static int mdc2_set_ctx_params(void *vctx, const OSSL_PARAM params[])
     return 0; /* Null Parameter */
 }
 
-/* mdc2_functions */
+/* ossl_mdc2_functions */
 IMPLEMENT_digest_functions_with_settable_ctx(
     mdc2, MDC2_CTX, MDC2_BLOCK, MDC2_DIGEST_LENGTH, 0,
     MDC2_Init, MDC2_Update, MDC2_Final,

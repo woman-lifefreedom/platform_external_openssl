@@ -28,10 +28,6 @@
 #include "ssl_local.h"
 #include <openssl/ct.h>
 
-DEFINE_STACK_OF_CONST(SSL_CIPHER)
-DEFINE_STACK_OF(X509)
-DEFINE_STACK_OF(X509_NAME)
-
 static const SIGALG_LOOKUP *find_sig_alg(SSL *s, X509 *x, EVP_PKEY *pkey);
 static int tls12_sigalg_allowed(const SSL *s, int op, const SIGALG_LOOKUP *lu);
 
@@ -253,6 +249,7 @@ static int add_provider_groups(const OSSL_PARAM params[], void *data)
     TLS_GROUP_INFO *ginf = NULL;
     EVP_KEYMGMT *keymgmt;
     unsigned int gid;
+    unsigned int is_kem = 0;
     int ret = 0;
 
     if (ctx->group_list_max_len == ctx->group_list_len) {
@@ -324,6 +321,13 @@ static int add_provider_groups(const OSSL_PARAM params[], void *data)
         SSLerr(0, ERR_R_PASSED_INVALID_ARGUMENT);
         goto err;
     }
+
+    p = OSSL_PARAM_locate_const(params, OSSL_CAPABILITY_TLS_GROUP_IS_KEM);
+    if (p != NULL && (!OSSL_PARAM_get_uint(p, &is_kem) || is_kem > 1)) {
+        SSLerr(0, ERR_R_PASSED_INVALID_ARGUMENT);
+        goto err;
+    }
+    ginf->is_kem = 1 & is_kem;
 
     p = OSSL_PARAM_locate_const(params, OSSL_CAPABILITY_TLS_GROUP_MIN_TLS);
     if (p == NULL || !OSSL_PARAM_get_int(p, &ginf->mintls)) {
@@ -3389,7 +3393,7 @@ SSL_HMAC *ssl_hmac_new(const SSL_CTX *ctx)
         return ret;
     }
 #endif
-    mac = EVP_MAC_fetch(ctx->libctx, "HMAC", NULL);
+    mac = EVP_MAC_fetch(ctx->libctx, "HMAC", ctx->propq);
     if (mac == NULL || (ret->ctx = EVP_MAC_CTX_new(mac)) == NULL)
         goto err;
     EVP_MAC_free(mac);

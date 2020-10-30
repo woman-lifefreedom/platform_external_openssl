@@ -7,6 +7,8 @@
  * https://www.openssl.org/source/license.html
  */
 
+
+
 #ifndef OPENSSL_ERR_H
 # define OPENSSL_ERR_H
 # pragma once
@@ -113,8 +115,8 @@ struct err_state_st {
 # define ERR_LIB_CRMF            56
 # define ERR_LIB_PROV            57
 # define ERR_LIB_CMP             58
-# define ERR_LIB_OSSL_SERIALIZER 59
-# define ERR_LIB_OSSL_DESERIALIZER 60
+# define ERR_LIB_OSSL_ENCODER    59
+# define ERR_LIB_OSSL_DECODER    60
 # define ERR_LIB_HTTP            61
 
 # define ERR_LIB_USER            128
@@ -186,24 +188,43 @@ struct err_state_st {
  *
  * A few of the reason bits are reserved as flags with special meaning:
  *
- *                    <4 bits><-------------- 19 bits ------------->
- *                   +-------+-------------------------------------+
- *                   | rflags|                reason               |
- *                   +-------+-------------------------------------+
+ *                    <5 bits-<>--------- 19 bits ----------------->
+ *                   +-------+-+-----------------------------------+
+ *                   | rflags| |          reason                   |
+ *                   +-------+-+-----------------------------------+
+ *                            ^
+ *                            |
+ *                           ERR_RFLAG_FATAL = ERR_R_FATAL
  *
- * We have the reason flags being part of the overall reason code for
- * backward compatibility reasons, i.e. how ERR_R_FATAL was implemented.
+ * The reason flags are part of the overall reason code for practical
+ * reasons, as they provide an easy way to place different types of
+ * reason codes in different numeric ranges.
+ *
+ * The currently known reason flags are:
+ *
+ * ERR_RFLAG_FATAL      Flags that the reason code is considered fatal.
+ *                      For backward compatibility reasons, this flag
+ *                      is also the code for ERR_R_FATAL (that reason
+ *                      code served the dual purpose of flag and reason
+ *                      code in one in pre-3.0 OpenSSL).
+ * ERR_RFLAG_COMMON     Flags that the reason code is common to all
+ *                      libraries.  All ERR_R_ macros must use this flag,
+ *                      and no other _R_ macro is allowed to use it.
  */
 
 /* Macros to help decode recorded system errors */
 # define ERR_SYSTEM_FLAG                ((unsigned int)INT_MAX + 1)
 # define ERR_SYSTEM_MASK                ((unsigned int)INT_MAX)
 
-/* Macros to help decode recorded OpenSSL errors */
+/*
+ * Macros to help decode recorded OpenSSL errors
+ * As expressed above, RFLAGS and REASON overlap by one bit to allow
+ * ERR_R_FATAL to use ERR_RFLAG_FATAL as its reason code.
+ */
 # define ERR_LIB_OFFSET                 23L
 # define ERR_LIB_MASK                   0xFF
-# define ERR_RFLAGS_OFFSET              19L
-# define ERR_RFLAGS_MASK                0xF
+# define ERR_RFLAGS_OFFSET              18L
+# define ERR_RFLAGS_MASK                0x1F
 # define ERR_REASON_MASK                0X7FFFFF
 
 /*
@@ -211,38 +232,44 @@ struct err_state_st {
  * number.
  */
 # define ERR_RFLAG_FATAL                (0x1 << ERR_RFLAGS_OFFSET)
+# define ERR_RFLAG_COMMON               (0x2 << ERR_RFLAGS_OFFSET)
 
 # define ERR_SYSTEM_ERROR(errcode)      (((errcode) & ERR_SYSTEM_FLAG) != 0)
 
-static ossl_inline int ERR_GET_LIB(unsigned long errcode)
+static ossl_unused ossl_inline int ERR_GET_LIB(unsigned long errcode)
 {
     if (ERR_SYSTEM_ERROR(errcode))
         return ERR_LIB_SYS;
     return (errcode >> ERR_LIB_OFFSET) & ERR_LIB_MASK;
 }
 
-static ossl_inline int ERR_GET_FUNC(unsigned long errcode ossl_unused)
+static ossl_unused ossl_inline int ERR_GET_FUNC(unsigned long errcode ossl_unused)
 {
     return 0;
 }
 
-static ossl_inline int ERR_GET_RFLAGS(unsigned long errcode)
+static ossl_unused ossl_inline int ERR_GET_RFLAGS(unsigned long errcode)
 {
     if (ERR_SYSTEM_ERROR(errcode))
         return 0;
     return errcode & (ERR_RFLAGS_MASK << ERR_RFLAGS_OFFSET);
 }
 
-static ossl_inline int ERR_GET_REASON(unsigned long errcode)
+static ossl_unused ossl_inline int ERR_GET_REASON(unsigned long errcode)
 {
     if (ERR_SYSTEM_ERROR(errcode))
         return errcode & ERR_SYSTEM_MASK;
     return errcode & ERR_REASON_MASK;
 }
 
-static ossl_inline int ERR_FATAL_ERROR(unsigned long errcode)
+static ossl_unused ossl_inline int ERR_FATAL_ERROR(unsigned long errcode)
 {
     return (ERR_GET_RFLAGS(errcode) & ERR_RFLAG_FATAL) != 0;
+}
+
+static ossl_unused ossl_inline int ERR_COMMON_ERROR(unsigned long errcode)
+{
+    return (ERR_GET_RFLAGS(errcode) & ERR_RFLAG_COMMON) != 0;
 }
 
 /*
@@ -283,59 +310,69 @@ static ossl_inline int ERR_FATAL_ERROR(unsigned long errcode)
 #  define SYS_F_SENDFILE          0
 # endif
 
-/* "we came from here" global reason codes, range 1..63 */
-# define ERR_R_SYS_LIB   ERR_LIB_SYS/* 2 */
-# define ERR_R_BN_LIB    ERR_LIB_BN/* 3 */
-# define ERR_R_RSA_LIB   ERR_LIB_RSA/* 4 */
-# define ERR_R_DH_LIB    ERR_LIB_DH/* 5 */
-# define ERR_R_EVP_LIB   ERR_LIB_EVP/* 6 */
-# define ERR_R_BUF_LIB   ERR_LIB_BUF/* 7 */
-# define ERR_R_OBJ_LIB   ERR_LIB_OBJ/* 8 */
-# define ERR_R_PEM_LIB   ERR_LIB_PEM/* 9 */
-# define ERR_R_DSA_LIB   ERR_LIB_DSA/* 10 */
-# define ERR_R_X509_LIB  ERR_LIB_X509/* 11 */
-# define ERR_R_ASN1_LIB  ERR_LIB_ASN1/* 13 */
-# define ERR_R_EC_LIB    ERR_LIB_EC/* 16 */
-# define ERR_R_BIO_LIB   ERR_LIB_BIO/* 32 */
-# define ERR_R_PKCS7_LIB ERR_LIB_PKCS7/* 33 */
-# define ERR_R_X509V3_LIB ERR_LIB_X509V3/* 34 */
-# define ERR_R_ENGINE_LIB ERR_LIB_ENGINE/* 38 */
-# define ERR_R_UI_LIB    ERR_LIB_UI/* 40 */
-# define ERR_R_ECDSA_LIB ERR_LIB_ECDSA/* 42 */
-# define ERR_R_OSSL_STORE_LIB ERR_LIB_OSSL_STORE/* 44 */
-
 /*
- * global reason codes, range 64..99 (sub-system specific codes start at 100)
- *
- * ERR_R_FATAL had dual purposes in pre-3.0 OpenSSL, as a standalone reason
- * code as well as a fatal flag.  This is still possible to do, as 2**6 (64)
- * is present in the whole range of global reason codes.
+ * All ERR_R_ codes must be combined with ERR_RFLAG_COMMON.
  */
-# define ERR_R_FATAL                             (64|ERR_RFLAG_FATAL)
-# define ERR_R_MALLOC_FAILURE                    (65|ERR_RFLAG_FATAL)
-# define ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED       (66|ERR_RFLAG_FATAL)
-# define ERR_R_PASSED_NULL_PARAMETER             (67|ERR_RFLAG_FATAL)
-# define ERR_R_INTERNAL_ERROR                    (68|ERR_RFLAG_FATAL)
-# define ERR_R_DISABLED                          (69|ERR_RFLAG_FATAL)
-# define ERR_R_INIT_FAIL                         (70|ERR_RFLAG_FATAL)
-# define ERR_R_PASSED_INVALID_ARGUMENT           (71)
-# define ERR_R_OPERATION_FAIL                    (72|ERR_RFLAG_FATAL)
-# define ERR_R_INVALID_PROVIDER_FUNCTIONS        (73|ERR_RFLAG_FATAL)
-# define ERR_R_INTERRUPTED_OR_CANCELLED          (74)
-# define ERR_R_NESTED_ASN1_ERROR                 (76)
-# define ERR_R_MISSING_ASN1_EOS                  (77)
 
-/*
- * 99 is the maximum possible ERR_R_... code, higher values are reserved for
- * the individual libraries
- */
+/* "we came from here" global reason codes, range 1..255 */
+# define ERR_R_SYS_LIB          (ERR_LIB_SYS/* 2 */ | ERR_RFLAG_COMMON)
+# define ERR_R_BN_LIB           (ERR_LIB_BN/* 3 */ | ERR_RFLAG_COMMON)
+# define ERR_R_RSA_LIB          (ERR_LIB_RSA/* 4 */ | ERR_RFLAG_COMMON)
+# define ERR_R_DH_LIB           (ERR_LIB_DH/* 5 */ | ERR_RFLAG_COMMON)
+# define ERR_R_EVP_LIB          (ERR_LIB_EVP/* 6 */ | ERR_RFLAG_COMMON)
+# define ERR_R_BUF_LIB          (ERR_LIB_BUF/* 7 */ | ERR_RFLAG_COMMON)
+# define ERR_R_OBJ_LIB          (ERR_LIB_OBJ/* 8 */ | ERR_RFLAG_COMMON)
+# define ERR_R_PEM_LIB          (ERR_LIB_PEM/* 9 */ | ERR_RFLAG_COMMON)
+# define ERR_R_DSA_LIB          (ERR_LIB_DSA/* 10 */ | ERR_RFLAG_COMMON)
+# define ERR_R_X509_LIB         (ERR_LIB_X509/* 11 */ | ERR_RFLAG_COMMON)
+# define ERR_R_ASN1_LIB         (ERR_LIB_ASN1/* 13 */ | ERR_RFLAG_COMMON)
+# define ERR_R_CRYPTO_LIB       (ERR_LIB_CRYPTO/* 15 */ | ERR_RFLAG_COMMON)
+# define ERR_R_EC_LIB           (ERR_LIB_EC/* 16 */ | ERR_RFLAG_COMMON)
+# define ERR_R_BIO_LIB          (ERR_LIB_BIO/* 32 */ | ERR_RFLAG_COMMON)
+# define ERR_R_PKCS7_LIB        (ERR_LIB_PKCS7/* 33 */ | ERR_RFLAG_COMMON)
+# define ERR_R_X509V3_LIB       (ERR_LIB_X509V3/* 34 */ | ERR_RFLAG_COMMON)
+# define ERR_R_ENGINE_LIB       (ERR_LIB_ENGINE/* 38 */ | ERR_RFLAG_COMMON)
+# define ERR_R_UI_LIB           (ERR_LIB_UI/* 40 */ | ERR_RFLAG_COMMON)
+# define ERR_R_ECDSA_LIB        (ERR_LIB_ECDSA/* 42 */ | ERR_RFLAG_COMMON)
+# define ERR_R_OSSL_STORE_LIB   (ERR_LIB_OSSL_STORE/* 44 */ | ERR_RFLAG_COMMON)
+# define ERR_R_OSSL_DECODER_LIB (ERR_LIB_OSSL_DECODER/* 60 */ | ERR_RFLAG_COMMON)
+
+/* Other common error codes, range 256..2^ERR_RFLAGS_OFFSET-1 */
+# define ERR_R_FATAL                             (ERR_RFLAG_FATAL|ERR_RFLAG_COMMON)
+# define ERR_R_MALLOC_FAILURE                    (256|ERR_R_FATAL)
+# define ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED       (257|ERR_R_FATAL)
+# define ERR_R_PASSED_NULL_PARAMETER             (258|ERR_R_FATAL)
+# define ERR_R_INTERNAL_ERROR                    (259|ERR_R_FATAL)
+# define ERR_R_DISABLED                          (260|ERR_R_FATAL)
+# define ERR_R_INIT_FAIL                         (261|ERR_R_FATAL)
+# define ERR_R_PASSED_INVALID_ARGUMENT           (262|ERR_RFLAG_COMMON)
+# define ERR_R_OPERATION_FAIL                    (263|ERR_R_FATAL)
+# define ERR_R_INVALID_PROVIDER_FUNCTIONS        (264|ERR_R_FATAL)
+# define ERR_R_INTERRUPTED_OR_CANCELLED          (265|ERR_RFLAG_COMMON)
+# define ERR_R_NESTED_ASN1_ERROR                 (266|ERR_RFLAG_COMMON)
+# define ERR_R_MISSING_ASN1_EOS                  (267|ERR_RFLAG_COMMON)
 
 typedef struct ERR_string_data_st {
     unsigned long error;
     const char *string;
 } ERR_STRING_DATA;
 
-DEFINE_LHASH_OF(ERR_STRING_DATA);
+DEFINE_LHASH_OF_INTERNAL(ERR_STRING_DATA);
+#define lh_ERR_STRING_DATA_new(hfn, cmp) ((LHASH_OF(ERR_STRING_DATA) *)OPENSSL_LH_new(ossl_check_ERR_STRING_DATA_lh_hashfunc_type(hfn), ossl_check_ERR_STRING_DATA_lh_compfunc_type(cmp)))
+#define lh_ERR_STRING_DATA_free(lh) OPENSSL_LH_free(ossl_check_ERR_STRING_DATA_lh_type(lh))
+#define lh_ERR_STRING_DATA_flush(lh) OPENSSL_LH_flush(ossl_check_ERR_STRING_DATA_lh_type(lh))
+#define lh_ERR_STRING_DATA_insert(lh, ptr) ((ERR_STRING_DATA *)OPENSSL_LH_insert(ossl_check_ERR_STRING_DATA_lh_type(lh), ossl_check_ERR_STRING_DATA_lh_plain_type(ptr)))
+#define lh_ERR_STRING_DATA_delete(lh, ptr) ((ERR_STRING_DATA *)OPENSSL_LH_delete(ossl_check_ERR_STRING_DATA_lh_type(lh), ossl_check_const_ERR_STRING_DATA_lh_plain_type(ptr)))
+#define lh_ERR_STRING_DATA_retrieve(lh, ptr) ((ERR_STRING_DATA *)OPENSSL_LH_retrieve(ossl_check_ERR_STRING_DATA_lh_type(lh), ossl_check_const_ERR_STRING_DATA_lh_plain_type(ptr)))
+#define lh_ERR_STRING_DATA_error(lh) OPENSSL_LH_error(ossl_check_ERR_STRING_DATA_lh_type(lh))
+#define lh_ERR_STRING_DATA_num_items(lh) OPENSSL_LH_num_items(ossl_check_ERR_STRING_DATA_lh_type(lh))
+#define lh_ERR_STRING_DATA_node_stats_bio(lh, out) OPENSSL_LH_node_stats_bio(ossl_check_const_ERR_STRING_DATA_lh_type(lh), out)
+#define lh_ERR_STRING_DATA_node_usage_stats_bio(lh, out) OPENSSL_LH_node_usage_stats_bio(ossl_check_const_ERR_STRING_DATA_lh_type(lh), out)
+#define lh_ERR_STRING_DATA_stats_bio(lh, out) OPENSSL_LH_stats_bio(ossl_check_const_ERR_STRING_DATA_lh_type(lh), out)
+#define lh_ERR_STRING_DATA_get_down_load(lh) OPENSSL_LH_get_down_load(ossl_check_ERR_STRING_DATA_lh_type(lh))
+#define lh_ERR_STRING_DATA_set_down_load(lh, dl) OPENSSL_LH_set_down_load(ossl_check_ERR_STRING_DATA_lh_type(lh), dl)
+#define lh_ERR_STRING_DATA_doall(lh, dfn) OPENSSL_LH_doall(ossl_check_ERR_STRING_DATA_lh_type(lh), ossl_check_ERR_STRING_DATA_lh_doallfunc_type(dfn))
+
 
 /* 12 lines and some on an 80 column terminal */
 #define ERR_MAX_DATA_SIZE       1024

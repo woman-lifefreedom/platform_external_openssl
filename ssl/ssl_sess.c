@@ -19,8 +19,6 @@
 #include "ssl_local.h"
 #include "statem/statem_local.h"
 
-DEFINE_STACK_OF(X509)
-
 static void SSL_SESSION_list_remove(SSL_CTX *ctx, SSL_SESSION *s);
 static void SSL_SESSION_list_add(SSL_CTX *ctx, SSL_SESSION *s);
 static int remove_session_lock(SSL_CTX *ctx, SSL_SESSION *c, int lck);
@@ -112,7 +110,7 @@ SSL_SESSION *ssl_session_dup(const SSL_SESSION *src, int ticket)
 {
     SSL_SESSION *dest;
 
-    dest = OPENSSL_malloc(sizeof(*src));
+    dest = OPENSSL_malloc(sizeof(*dest));
     if (dest == NULL) {
         goto err;
     }

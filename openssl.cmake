@@ -143,7 +143,6 @@ set(crypto_srcs
         crypto/buffer/buf_err.c
         crypto/buffer/buffer.c
         crypto/chacha/chacha_enc.c
-        crypto/cmac/cm_ameth.c
         crypto/cmac/cmac.c
         crypto/cms/cms_asn1.c
         crypto/cms/cms_att.c
@@ -217,6 +216,7 @@ set(crypto_srcs
         crypto/dh/dh_asn1.c
         crypto/dh/dh_backend.c
         crypto/dh/dh_check.c
+        crypto/dh/dh_ctrl.c
         crypto/dh/dh_depr.c
         crypto/dh/dh_err.c
         crypto/dh/dh_gen.c
@@ -287,6 +287,14 @@ set(crypto_srcs
         crypto/ec/ecx_backend.c
         crypto/ec/ecx_meth.c
         crypto/ec/ecx_key.c
+        crypto/encode_decode/decoder_err.c
+        crypto/encode_decode/decoder_lib.c
+        crypto/encode_decode/decoder_meth.c
+        crypto/encode_decode/decoder_pkey.c
+        crypto/encode_decode/encoder_err.c
+        crypto/encode_decode/encoder_lib.c
+        crypto/encode_decode/encoder_meth.c
+        crypto/encode_decode/encoder_pkey.c
         crypto/engine/eng_all.c
         crypto/engine/eng_cnf.c
         crypto/engine/eng_ctrl.c
@@ -315,6 +323,7 @@ set(crypto_srcs
         crypto/ess/ess_asn1.c
         crypto/ess/ess_err.c
         crypto/ess/ess_lib.c
+        crypto/evp/asymcipher.c
         crypto/evp/bio_b64.c
         crypto/evp/bio_enc.c
         crypto/evp/bio_md.c
@@ -352,6 +361,7 @@ set(crypto_srcs
         crypto/evp/exchange.c
         crypto/evp/kdf_lib.c
         crypto/evp/kdf_meth.c
+        crypto/evp/kem.c
         crypto/evp/keymgmt_lib.c
         crypto/evp/keymgmt_meth.c
         crypto/evp/legacy_blake2.c
@@ -367,8 +377,6 @@ set(crypto_srcs
         crypto/evp/p5_crpt.c
         crypto/evp/p5_crpt2.c
         crypto/evp/pbe_scrypt.c
-        crypto/evp/pkey_kdf.c
-        crypto/evp/pkey_mac.c
         crypto/evp/p_dec.c
         crypto/evp/p_enc.c
         crypto/evp/p_lib.c
@@ -376,7 +384,6 @@ set(crypto_srcs
         crypto/evp/p_seal.c
         crypto/evp/p_sign.c
         crypto/evp/p_verify.c
-        crypto/evp/pmeth_fn.c
         crypto/evp/pmeth_gn.c
         crypto/evp/pmeth_lib.c
         crypto/evp/evp_rand.c
@@ -389,7 +396,6 @@ set(crypto_srcs
         crypto/ffc/ffc_params_generate.c
         crypto/ffc/ffc_params_validate.c
         crypto/getenv.c
-        crypto/hmac/hm_ameth.c
         crypto/hmac/hmac.c
         crypto/http/http_client.c
         crypto/http/http_err.c
@@ -441,6 +447,7 @@ set(crypto_srcs
         crypto/param_build.c
         crypto/param_build_set.c
         crypto/params_from_text.c
+        crypto/passphrase.c
         crypto/pem/pem_all.c
         crypto/pem/pem_err.c
         crypto/pem/pem_info.c
@@ -476,7 +483,6 @@ set(crypto_srcs
         crypto/pkcs7/pk7_smime.c
         crypto/pkcs7/pkcs7err.c
         crypto/poly1305/poly1305.c
-        crypto/poly1305/poly1305_ameth.c
         crypto/provider.c
         crypto/provider_core.c
         crypto/provider_conf.c
@@ -486,10 +492,11 @@ set(crypto_srcs
         crypto/property/property_err.c
         crypto/property/property_parse.c
         crypto/property/property_string.c
-        crypto/rand/drbg_lib.c
+        crypto/punycode.c
         crypto/rand/rand_egd.c
         crypto/rand/rand_err.c
         crypto/rand/rand_lib.c
+        crypto/rand/rand_meth.c
         crypto/rand/randfile.c
         crypto/rc2/rc2_cbc.c
         crypto/rc2/rc2_ecb.c
@@ -525,26 +532,15 @@ set(crypto_srcs
         crypto/rsa/rsa_x931.c
         crypto/rsa/rsa_x931g.c
         crypto/self_test_core.c
-        crypto/serializer/deserializer_err.c
-        crypto/serializer/deserializer_lib.c
-        crypto/serializer/deserializer_meth.c
-        crypto/serializer/deserializer_pkey.c
-        crypto/serializer/serdes_pass.c
-        crypto/serializer/serializer_err.c
-        crypto/serializer/serializer_lib.c
-        crypto/serializer/serializer_meth.c
-        crypto/serializer/serializer_pkey.c
         crypto/sha/sha1_one.c
         crypto/sha/sha1dgst.c
         crypto/sha/sha256.c
         crypto/sha/sha3.c
         crypto/sha/sha512.c
         crypto/siphash/siphash.c
-        crypto/siphash/siphash_ameth.c
         crypto/sm2/sm2_err.c
         crypto/sm2/sm2_crypt.c
         crypto/sm2/sm2_sign.c
-        crypto/sm2/sm2_pmeth.c
         crypto/sm3/sm3.c
         crypto/sm3/legacy_sm3.c
         crypto/sm4/sm4.c
@@ -554,9 +550,10 @@ set(crypto_srcs
         crypto/store/store_init.c
         crypto/store/store_err.c
         crypto/store/store_register.c
+        crypto/store/store_result.c
         crypto/store/store_lib.c
+        crypto/store/store_meth.c
         crypto/store/store_strings.c
-        crypto/store/loader_file.c
         crypto/stack/stack.c
         crypto/threads_none.c
         crypto/threads_pthread.c
@@ -761,76 +758,28 @@ set(provider_srcs
         providers/common/der/der_dsa_gen.c
         providers/common/der/der_dsa_sig.c
         providers/common/der/der_ec_gen.c
+        providers/common/der/der_ecx_gen.c
+        providers/common/der/der_ecx_key.c
         providers/common/der/der_ec_sig.c
         providers/common/der/der_rsa_gen.c
         providers/common/der/der_rsa_key.c
         providers/common/der/der_rsa_sig.c
+        providers/common/der/der_sm2_gen.c
+        providers/common/der/der_sm2_sig.c
         providers/common/der/der_wrap_gen.c
+        providers/common/digest_to_nid.c
+        providers/common/nid_to_name.c
         providers/common/provider_ctx.c
         providers/common/provider_util.c
         providers/common/provider_err.c
-        providers/common/nid_to_name.c
+        providers/common/securitycheck.c
+        providers/common/securitycheck_default.c
         providers/baseprov.c
         providers/defltprov.c
         providers/implementations/asymciphers/rsa_enc.c
+        providers/implementations/asymciphers/sm2_enc.c
         providers/implementations/ciphers/cipher_aes_cts_fips.c
         providers/implementations/ciphers/ciphercommon_block.c
-        providers/implementations/exchange/ecx_exch.c
-        providers/implementations/exchange/ecdh_exch.c
-        providers/implementations/exchange/dh_exch.c
-        providers/implementations/serializers/deserialize_common.c
-        providers/implementations/serializers/deserialize_der2key.c
-        providers/implementations/serializers/deserialize_pem2der.c
-        providers/implementations/signature/dsa.c
-        providers/implementations/signature/rsa.c
-        providers/implementations/signature/eddsa.c
-        providers/implementations/signature/ecdsa.c
-        providers/implementations/keymgmt/dh_kmgmt.c
-        providers/implementations/keymgmt/ec_kmgmt.c
-        providers/implementations/keymgmt/rsa_kmgmt.c
-        providers/implementations/keymgmt/dsa_kmgmt.c
-        providers/implementations/keymgmt/ecx_kmgmt.c
-        providers/implementations/kdfs/x942kdf.c
-        providers/implementations/kdfs/sskdf.c
-        providers/implementations/kdfs/tls1_prf.c
-        providers/implementations/kdfs/sshkdf.c
-        providers/implementations/kdfs/scrypt.c
-        providers/implementations/kdfs/krb5kdf.c
-        providers/implementations/kdfs/hkdf.c
-        providers/implementations/kdfs/pbkdf2_fips.c
-        providers/implementations/kdfs/kbkdf.c
-        providers/implementations/kdfs/pbkdf2.c
-        providers/implementations/rands/drbg.c
-        providers/implementations/rands/drbg_ctr.c
-        providers/implementations/rands/drbg_hash.c
-        providers/implementations/rands/drbg_hmac.c
-        providers/implementations/rands/rand_pool.c
-        providers/implementations/rands/seeding/rand_unix.c
-        providers/implementations/rands/test_rng.c
-        providers/implementations/serializers/serializer_common.c
-        providers/implementations/serializers/serializer_dsa_priv.c
-        providers/implementations/serializers/serializer_dh.c
-        providers/implementations/serializers/serializer_ec_param.c
-        providers/implementations/serializers/serializer_dsa_pub.c
-        providers/implementations/serializers/serializer_dh_priv.c
-        providers/implementations/serializers/serializer_ffc_params.c
-        providers/implementations/serializers/serializer_ecx_pub.c
-        providers/implementations/serializers/serializer_dsa_param.c
-        providers/implementations/serializers/serializer_ecx_priv.c
-        providers/implementations/serializers/serializer_dh_param.c
-        providers/implementations/serializers/serializer_rsa_pub.c
-        providers/implementations/serializers/serializer_rsa_priv.c
-        providers/implementations/serializers/serializer_dh_pub.c
-        providers/implementations/serializers/serializer_rsa.c
-        providers/implementations/serializers/serializer_ec_pub.c
-        providers/implementations/serializers/serializer_ec_priv.c
-        providers/implementations/serializers/serializer_dsa.c
-        providers/implementations/serializers/serializer_ecx.c
-        providers/implementations/serializers/serializer_ec.c
-        providers/implementations/signature/dsa.c
-        providers/implementations/signature/ecdsa.c
-        providers/implementations/signature/eddsa.c
-        providers/implementations/signature/rsa.c
         providers/implementations/ciphers/cipher_chacha20.c
         providers/implementations/ciphers/cipher_aes_cbc_hmac_sha1_hw.c
         providers/implementations/ciphers/cipher_aes_cbc_hmac_sha.c
@@ -895,14 +844,59 @@ set(provider_srcs
         providers/implementations/digests/blake2b_prov.c
         providers/implementations/digests/sha3_prov.c
         providers/implementations/digests/md4_prov.c
-        providers/implementations/macs/gmac_prov.c
-        providers/implementations/macs/blake2s_mac.c
-        providers/implementations/macs/poly1305_prov.c
-        providers/implementations/macs/kmac_prov.c
+        providers/implementations/encode_decode/decode_der2key.c
+        providers/implementations/encode_decode/encode_key2any.c
+        providers/implementations/encode_decode/decode_ms2key.c
+        providers/implementations/encode_decode/encode_key2text.c
+        providers/implementations/encode_decode/decode_pem2der.c
+        providers/implementations/encode_decode/endecoder_common.c
+        providers/implementations/exchange/ecx_exch.c
+        providers/implementations/exchange/ecdh_exch.c
+        providers/implementations/exchange/dh_exch.c
+        providers/implementations/exchange/kdf_exch.c
+        providers/implementations/kem/rsa_kem.c
+        providers/implementations/keymgmt/dh_kmgmt.c
+        providers/implementations/keymgmt/ec_kmgmt.c
+        providers/implementations/keymgmt/dsa_kmgmt.c
+        providers/implementations/keymgmt/ecx_kmgmt.c
+        providers/implementations/keymgmt/kdf_legacy_kmgmt.c
+        providers/implementations/keymgmt/mac_legacy_kmgmt.c
+        providers/implementations/keymgmt/rsa_kmgmt.c
+        providers/implementations/kdfs/x942kdf.c
+        providers/implementations/kdfs/sskdf.c
+        providers/implementations/kdfs/tls1_prf.c
+        providers/implementations/kdfs/sshkdf.c
+        providers/implementations/kdfs/scrypt.c
+        providers/implementations/kdfs/krb5kdf.c
+        providers/implementations/kdfs/hkdf.c
+        providers/implementations/kdfs/pbkdf2_fips.c
+        providers/implementations/kdfs/kbkdf.c
+        providers/implementations/kdfs/pbkdf2.c
+        providers/implementations/kdfs/pkcs12kdf.c
         providers/implementations/macs/blake2b_mac.c
+        providers/implementations/macs/blake2s_mac.c
         providers/implementations/macs/cmac_prov.c
+        providers/implementations/macs/gmac_prov.c
         providers/implementations/macs/hmac_prov.c
+        providers/implementations/macs/kmac_prov.c
+        providers/implementations/macs/poly1305_prov.c
         providers/implementations/macs/siphash_prov.c
+        providers/implementations/rands/drbg.c
+        providers/implementations/rands/drbg_ctr.c
+        providers/implementations/rands/drbg_hash.c
+        providers/implementations/rands/drbg_hmac.c
+        providers/implementations/rands/rand_pool.c
+        providers/implementations/rands/seeding/rand_unix.c
+        providers/implementations/rands/test_rng.c
+        providers/implementations/signature/dsa.c
+        providers/implementations/signature/ecdsa.c
+        providers/implementations/signature/eddsa.c
+        providers/implementations/signature/mac_legacy.c
+        providers/implementations/signature/rsa.c
+        providers/implementations/signature/sm2sig.c
+        providers/implementations/storemgmt/file_store.c
+        providers/implementations/storemgmt/file_store_der2obj.c
+        providers/prov_running.c
         )
 
 PREPEND(crypto_srcs_with_path ${OPENSSL_PATH} ${provider_srcs} ${crypto_srcs})
@@ -936,7 +930,7 @@ target_compile_options(crypto PRIVATE -Wno-missing-field-initializers -Wno-unuse
         -DOPENSSL_PIC
         -DOPENSSL_THREADS
         -DOPENSSL_CPUID_OBJ
-
+        -DL_ENDIAN
         )
 
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a")

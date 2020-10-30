@@ -8,9 +8,6 @@
  * https://www.openssl.org/source/license.html
  */
 
-/* We need to use some engine deprecated APIs */
-#define OPENSSL_SUPPRESS_DEPRECATED
-
 #include "e_os.h"
 #include <ctype.h>
 #include <stdio.h>
@@ -58,12 +55,6 @@ typedef unsigned int u_int;
 #  include <sanitizer/msan_interface.h>
 # endif
 #endif
-
-DEFINE_STACK_OF(X509)
-DEFINE_STACK_OF(X509_CRL)
-DEFINE_STACK_OF(X509_NAME)
-DEFINE_STACK_OF(SCT)
-DEFINE_STACK_OF_STRING()
 
 #undef BUFSIZZ
 #define BUFSIZZ 1024*8
@@ -612,7 +603,7 @@ const OPTIONS s_client_options[] = {
     {"host", OPT_HOST, 's', "Use -connect instead"},
     {"port", OPT_PORT, 'p', "Use -connect instead"},
     {"connect", OPT_CONNECT, 's',
-     "TCP/IP where to connect (default is :" PORT ")"},
+     "TCP/IP where to connect; default: " PORT ")"},
     {"bind", OPT_BIND, 's', "bind local address for connection"},
     {"proxy", OPT_PROXY, 's',
      "Connect to via specified proxy to the real server"},
@@ -643,9 +634,9 @@ const OPTIONS s_client_options[] = {
     {"cert_chain", OPT_CERT_CHAIN, '<',
      "Client certificate chain file (in PEM format)"},
     {"build_chain", OPT_BUILD_CHAIN, '-', "Build client certificate chain"},
-    {"key", OPT_KEY, 's', "Private key file to use; default is: -cert file"},
+    {"key", OPT_KEY, 's', "Private key file to use; default: -cert file"},
     {"keyform", OPT_KEYFORM, 'E', "Key format (ENGINE, other values ignored)"},
-    {"pass", OPT_PASS, 's', "Private key file pass phrase source"},
+    {"pass", OPT_PASS, 's', "Private key and cert file pass phrase source"},
     {"verify", OPT_VERIFY, 'p', "Turn on peer certificate verification"},
     {"nameopt", OPT_NAMEOPT, 's', "Certificate subject/issuer name printing options"},
     {"CApath", OPT_CAPATH, '/', "PEM format directory of CA's"},
@@ -702,7 +693,7 @@ const OPTIONS s_client_options[] = {
     {"keymatexport", OPT_KEYMATEXPORT, 's',
      "Export keying material using label"},
     {"keymatexportlen", OPT_KEYMATEXPORTLEN, 'p',
-     "Export len bytes of keying material (default 20)"},
+     "Export len bytes of keying material; default 20"},
     {"security_debug", OPT_SECURITY_DEBUG, '-',
      "Enable security debug messages"},
     {"security_debug_verbose", OPT_SECURITY_DEBUG_VERBOSE, '-',
@@ -790,7 +781,7 @@ const OPTIONS s_client_options[] = {
     OPT_V_OPTIONS,
     {"CRL", OPT_CRL, '<', "CRL file to use"},
     {"crl_download", OPT_CRL_DOWNLOAD, '-', "Download CRL from distribution points"},
-    {"CRLform", OPT_CRLFORM, 'F', "CRL format (PEM or DER) PEM is default"},
+    {"CRLform", OPT_CRLFORM, 'F', "CRL format (PEM or DER); default PEM"},
     {"verify_return_error", OPT_VERIFY_RET_ERROR, '-',
      "Close connection on verification error"},
     {"verify_quiet", OPT_VERIFY_QUIET, '-', "Restrict verify output to errors"},
@@ -1210,7 +1201,7 @@ int s_client_main(int argc, char **argv)
             break;
         case OPT_SSL_CLIENT_ENGINE:
 #ifndef OPENSSL_NO_ENGINE
-            ssl_client_engine = ENGINE_by_id(opt_arg());
+            ssl_client_engine = setup_engine(opt_arg(), 0);
             if (ssl_client_engine == NULL) {
                 BIO_printf(bio_err, "Error getting client auth engine\n");
                 goto opthelp;
@@ -1734,20 +1725,19 @@ int s_client_main(int argc, char **argv)
 
     if (key_file != NULL) {
         key = load_key(key_file, key_format, 0, pass, e,
-                       "client certificate private key file");
+                       "client certificate private key");
         if (key == NULL)
             goto end;
     }
 
     if (cert_file != NULL) {
-        cert = load_cert(cert_file, cert_format, "client certificate file");
+        cert = load_cert_pass(cert_file, cert_format, pass, "client certificate");
         if (cert == NULL)
             goto end;
     }
 
     if (chain_file != NULL) {
-        if (!load_certs(chain_file, &chain, FORMAT_PEM, NULL,
-                        "client certificate chain"))
+        if (!load_certs(chain_file, &chain, pass, "client certificate chain"))
             goto end;
     }
 
@@ -1888,10 +1878,10 @@ int s_client_main(int argc, char **argv)
         if (!SSL_CTX_set_client_cert_engine(ctx, ssl_client_engine)) {
             BIO_puts(bio_err, "Error setting client auth engine\n");
             ERR_print_errors(bio_err);
-            ENGINE_free(ssl_client_engine);
+            release_engine(ssl_client_engine);
             goto end;
         }
-        ENGINE_free(ssl_client_engine);
+        release_engine(ssl_client_engine);
     }
 #endif
 

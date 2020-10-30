@@ -21,10 +21,6 @@
 #include <openssl/x509.h>
 #include <openssl/trace.h>
 
-DEFINE_STACK_OF(X509)
-DEFINE_STACK_OF(X509_NAME)
-DEFINE_STACK_OF_CONST(SSL_CIPHER)
-
 /*
  * Map error codes to TLS/SSL alart types.
  */
@@ -94,6 +90,8 @@ int tls_close_construct_packet(SSL *s, WPACKET *pkt, int htype)
 
 int tls_setup_handshake(SSL *s)
 {
+    int ver_min, ver_max, ok;
+
     if (!ssl3_init_finished_mac(s)) {
         /* SSLfatal() already called */
         return 0;
@@ -102,20 +100,61 @@ int tls_setup_handshake(SSL *s)
     /* Reset any extension flags */
     memset(s->ext.extflags, 0, sizeof(s->ext.extflags));
 
+    if (ssl_get_min_max_version(s, &ver_min, &ver_max, NULL) != 0) {
+        SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS_SETUP_HANDSHAKE,
+                    ERR_R_INTERNAL_ERROR);
+        return 0;
+    }
+
+    /* Sanity check that we have MD5-SHA1 if we need it */
+    if (s->ctx->ssl_digest_methods[SSL_MD_MD5_SHA1_IDX] == NULL) {
+        int md5sha1_needed = 0;
+
+        /* We don't have MD5-SHA1 - do we need it? */
+        if (SSL_IS_DTLS(s)) {
+            if (DTLS_VERSION_LE(ver_max, DTLS1_VERSION))
+                md5sha1_needed = 1;
+        } else {
+            if (ver_max <= TLS1_1_VERSION)
+                md5sha1_needed = 1;
+        }
+        if (md5sha1_needed) {
+            SSLfatal(s, SSL_AD_HANDSHAKE_FAILURE, SSL_F_TLS_SETUP_HANDSHAKE,
+                        SSL_R_NO_SUITABLE_DIGEST_ALGORITHM);
+            ERR_add_error_data(1, "The max supported SSL/TLS version needs the"
+                                    " MD5-SHA1 digest but it is not available"
+                                    " in the loaded providers. Use (D)TLSv1.2 or"
+                                    " above, or load different providers");
+            return 0;
+        }
+
+        ok = 1;
+        /* Don't allow TLSv1.1 or below to be negotiated */
+        if (SSL_IS_DTLS(s)) {
+            if (DTLS_VERSION_LT(ver_min, DTLS1_2_VERSION))
+                ok = SSL_set_min_proto_version(s, DTLS1_2_VERSION);
+        } else {
+            if (ver_min < TLS1_2_VERSION)
+                ok = SSL_set_min_proto_version(s, TLS1_2_VERSION);
+        }
+        if (!ok) {
+            /* Shouldn't happen */
+            SSLfatal(s, SSL_AD_HANDSHAKE_FAILURE, SSL_F_TLS_SETUP_HANDSHAKE,
+                     ERR_R_INTERNAL_ERROR);
+            return 0;
+        }
+    }
+
+    ok = 0;
     if (s->server) {
         STACK_OF(SSL_CIPHER) *ciphers = SSL_get_ciphers(s);
-        int i, ver_min, ver_max, ok = 0;
+        int i;
 
         /*
          * Sanity check that the maximum version we accept has ciphers
          * enabled. For clients we do this check during construction of the
          * ClientHello.
          */
-        if (ssl_get_min_max_version(s, &ver_min, &ver_max, NULL) != 0) {
-            SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS_SETUP_HANDSHAKE,
-                     ERR_R_INTERNAL_ERROR);
-            return 0;
-        }
         for (i = 0; i < sk_SSL_CIPHER_num(ciphers); i++) {
             const SSL_CIPHER *c = sk_SSL_CIPHER_value(ciphers, i);
 
@@ -277,9 +316,8 @@ int tls_construct_cert_verify(SSL *s, WPACKET *pkt)
         goto err;
     }
 
-    if (EVP_DigestSignInit_ex(mctx, &pctx,
-                              md == NULL ? NULL : EVP_MD_name(md),
-                              s->ctx->propq, pkey, s->ctx->libctx) <= 0) {
+    if (EVP_DigestSignInit_ex(mctx, &pctx, md == NULL ? NULL : EVP_MD_name(md),
+                              s->ctx->libctx, s->ctx->propq, pkey) <= 0) {
         SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS_CONSTRUCT_CERT_VERIFY,
                  ERR_R_EVP_LIB);
         goto err;
@@ -474,7 +512,7 @@ MSG_PROCESS_RETURN tls_process_cert_verify(SSL *s, PACKET *pkt)
 
     if (EVP_DigestVerifyInit_ex(mctx, &pctx,
                                 md == NULL ? NULL : EVP_MD_name(md),
-                                s->ctx->propq, pkey, s->ctx->libctx) <= 0) {
+                                s->ctx->libctx, s->ctx->propq, pkey) <= 0) {
         SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS_PROCESS_CERT_VERIFY,
                  ERR_R_EVP_LIB);
         goto err;
@@ -962,8 +1000,8 @@ static int ssl_add_cert_chain(SSL *s, WPACKET *pkt, CERT_PKEY *cpk)
         chain_store = s->ctx->cert_store;
 
     if (chain_store != NULL) {
-        X509_STORE_CTX *xs_ctx = X509_STORE_CTX_new_with_libctx(s->ctx->libctx,
-                                                                s->ctx->propq);
+        X509_STORE_CTX *xs_ctx = X509_STORE_CTX_new_ex(s->ctx->libctx,
+                                                       s->ctx->propq);
 
         if (xs_ctx == NULL) {
             SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_SSL_ADD_CERT_CHAIN,
@@ -1367,6 +1405,7 @@ int tls_get_message_body(SSL *s, size_t *len)
 static const X509ERR2ALERT x509table[] = {
     {X509_V_ERR_APPLICATION_VERIFICATION, SSL_AD_HANDSHAKE_FAILURE},
     {X509_V_ERR_CA_KEY_TOO_SMALL, SSL_AD_BAD_CERTIFICATE},
+    {X509_V_ERR_EC_KEY_EXPLICIT_PARAMS, SSL_AD_BAD_CERTIFICATE},
     {X509_V_ERR_CA_MD_TOO_WEAK, SSL_AD_BAD_CERTIFICATE},
     {X509_V_ERR_CERT_CHAIN_TOO_LONG, SSL_AD_UNKNOWN_CA},
     {X509_V_ERR_CERT_HAS_EXPIRED, SSL_AD_CERTIFICATE_EXPIRED},

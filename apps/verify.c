@@ -18,10 +18,6 @@
 #include <openssl/x509v3.h>
 #include <openssl/pem.h>
 
-DEFINE_STACK_OF(X509)
-DEFINE_STACK_OF(X509_CRL)
-DEFINE_STACK_OF_STRING()
-
 static int cb(int ok, X509_STORE_CTX *ctx);
 static int check(X509_STORE *ctx, const char *file,
                  STACK_OF(X509) *uchain, STACK_OF(X509) *tchain,
@@ -149,7 +145,7 @@ int verify_main(int argc, char **argv)
             break;
         case OPT_UNTRUSTED:
             /* Zero or more times */
-            if (!load_certs(opt_arg(), &untrusted, FORMAT_PEM, NULL,
+            if (!load_certs(opt_arg(), &untrusted, NULL,
                             "untrusted certificates"))
                 goto end;
             break;
@@ -158,14 +154,12 @@ int verify_main(int argc, char **argv)
             noCAfile = 1;
             noCApath = 1;
             noCAstore = 1;
-            if (!load_certs(opt_arg(), &trusted, FORMAT_PEM, NULL,
-                            "trusted certificates"))
+            if (!load_certs(opt_arg(), &trusted, NULL, "trusted certificates"))
                 goto end;
             break;
         case OPT_CRLFILE:
             /* Zero or more times */
-            if (!load_crls(opt_arg(), &crls, FORMAT_PEM, NULL,
-                           "other CRLs"))
+            if (!load_crls(opt_arg(), &crls, NULL, "other CRLs"))
                 goto end;
             break;
         case OPT_CRL_DOWNLOAD:

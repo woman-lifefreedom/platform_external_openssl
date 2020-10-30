@@ -35,6 +35,7 @@
 # include "internal/refcount.h"
 # include "internal/tsan_assist.h"
 # include "internal/bio.h"
+# include "internal/ktls.h"
 
 # ifdef OPENSSL_BUILD_SHLIBSSL
 #  undef OPENSSL_EXTERN
@@ -523,7 +524,7 @@ struct ssl_method_st {
  * Matches the length of PSK_MAX_PSK_LEN. We keep it the same value for
  * consistency, even in the event of OPENSSL_NO_PSK being defined.
  */
-# define TLS13_MAX_RESUMPTION_PSK_LENGTH      256
+# define TLS13_MAX_RESUMPTION_PSK_LENGTH      512
 
 /*-
  * Lets make this into an ASN.1 type structure as follows
@@ -817,6 +818,7 @@ typedef struct tls_group_info_st {
     int maxtls;              /* Maximum TLS version (or 0 for undefined) */
     int mindtls;             /* Minimum DTLS version, -1 unsupported */
     int maxdtls;             /* Maximum DTLS version (or 0 for undefined) */
+    char is_kem;             /* Mode for this Group: 0 is KEX, 1 is KEM */
 } TLS_GROUP_INFO;
 
 /* flags values */
@@ -830,7 +832,7 @@ typedef struct tls_group_info_st {
 # define TLS_GROUP_FFDHE_FOR_TLS1_3 (TLS_GROUP_FFDHE|TLS_GROUP_ONLY_FOR_TLS1_3)
 
 struct ssl_ctx_st {
-    OPENSSL_CTX *libctx;
+    OSSL_LIB_CTX *libctx;
 
     const SSL_METHOD *method;
     STACK_OF(SSL_CIPHER) *cipher_list;
@@ -2452,8 +2454,15 @@ __owur int ssl_fill_hello_random(SSL *s, int server, unsigned char *field,
 __owur int ssl_generate_master_secret(SSL *s, unsigned char *pms, size_t pmslen,
                                       int free_pms);
 __owur EVP_PKEY *ssl_generate_pkey(SSL *s, EVP_PKEY *pm);
+__owur int ssl_gensecret(SSL *s, unsigned char *pms, size_t pmslen);
 __owur int ssl_derive(SSL *s, EVP_PKEY *privkey, EVP_PKEY *pubkey,
                       int genmaster);
+__owur int ssl_decapsulate(SSL *s, EVP_PKEY *privkey,
+                           const unsigned char *ct, size_t ctlen,
+                           int gensecret);
+__owur int ssl_encapsulate(SSL *s, EVP_PKEY *pubkey,
+                           unsigned char **ctp, size_t *ctlenp,
+                           int gensecret);
 __owur EVP_PKEY *ssl_dh_to_pkey(DH *dh);
 __owur unsigned int ssl_get_max_send_fragment(const SSL *ssl);
 __owur unsigned int ssl_get_split_send_fragment(const SSL *ssl);
@@ -2747,15 +2756,25 @@ __owur int ssl_log_secret(SSL *ssl, const char *label,
 #define EARLY_EXPORTER_SECRET_LABEL "EARLY_EXPORTER_SECRET"
 #define EXPORTER_SECRET_LABEL "EXPORTER_SECRET"
 
+#  ifndef OPENSSL_NO_KTLS
+/* ktls.c */
+int ktls_check_supported_cipher(const SSL *s, const EVP_CIPHER *c,
+                                const EVP_CIPHER_CTX *dd);
+int ktls_configure_crypto(const SSL *s, const EVP_CIPHER *c, EVP_CIPHER_CTX *dd,
+                          void *rl_sequence, ktls_crypto_info_t *crypto_info,
+                          unsigned char **rec_seq, unsigned char *iv,
+                          unsigned char *key, unsigned char *mac_key,
+                          size_t mac_secret_size);
+#  endif
+
 /* s3_cbc.c */
 __owur char ssl3_cbc_record_digest_supported(const EVP_MD_CTX *ctx);
-__owur int ssl3_cbc_digest_record(SSL *s,
-                                  const EVP_MD_CTX *ctx,
+__owur int ssl3_cbc_digest_record(const EVP_MD *md,
                                   unsigned char *md_out,
                                   size_t *md_out_size,
                                   const unsigned char header[13],
                                   const unsigned char *data,
-                                  size_t data_plus_mac_size,
+                                  size_t data_size,
                                   size_t data_plus_mac_plus_padding_size,
                                   const unsigned char *mac_secret,
                                   size_t mac_secret_length, char is_sslv3);
@@ -2793,12 +2812,12 @@ void ssl_comp_free_compression_methods_int(void);
 /* ssl_mcnf.c */
 void ssl_ctx_system_config(SSL_CTX *ctx);
 
-const EVP_CIPHER *ssl_evp_cipher_fetch(OPENSSL_CTX *libctx,
+const EVP_CIPHER *ssl_evp_cipher_fetch(OSSL_LIB_CTX *libctx,
                                        int nid,
                                        const char *properties);
 int ssl_evp_cipher_up_ref(const EVP_CIPHER *cipher);
 void ssl_evp_cipher_free(const EVP_CIPHER *cipher);
-const EVP_MD *ssl_evp_md_fetch(OPENSSL_CTX *libctx,
+const EVP_MD *ssl_evp_md_fetch(OSSL_LIB_CTX *libctx,
                                int nid,
                                const char *properties);
 int ssl_evp_md_up_ref(const EVP_MD *md);

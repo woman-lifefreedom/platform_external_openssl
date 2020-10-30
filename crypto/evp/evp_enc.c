@@ -16,7 +16,6 @@
 #include <openssl/evp.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
-#include <openssl/rand_drbg.h>
 #include <openssl/engine.h>
 #include <openssl/params.h>
 #include <openssl/core_names.h>
@@ -175,10 +174,8 @@ int EVP_CipherInit_ex(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *cipher,
                                                       : OBJ_nid2sn(cipher->nid),
                              "");
 
-        if (provciph == NULL) {
-            EVPerr(EVP_F_EVP_CIPHERINIT_EX, EVP_R_INITIALIZATION_ERROR);
+        if (provciph == NULL)
             return 0;
-        }
         cipher = provciph;
         EVP_CIPHER_free(ctx->fetched_cipher);
         ctx->fetched_cipher = provciph;
@@ -972,11 +969,6 @@ int EVP_CIPHER_CTX_ctrl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
     case EVP_CTRL_SET_PIPELINE_OUTPUT_BUFS: /* Used by DASYNC */
     default:
         goto end;
-    case EVP_CTRL_GET_IV:
-        set_params = 0;
-        params[0] = OSSL_PARAM_construct_octet_string(OSSL_CIPHER_PARAM_IV,
-                                                      ptr, sz);
-        break;
     case EVP_CTRL_AEAD_SET_IVLEN:
         if (arg < 0)
             return 0;
@@ -1160,23 +1152,40 @@ int EVP_CIPHER_CTX_get_params(EVP_CIPHER_CTX *ctx, OSSL_PARAM params[])
 const OSSL_PARAM *EVP_CIPHER_gettable_params(const EVP_CIPHER *cipher)
 {
     if (cipher != NULL && cipher->gettable_params != NULL)
-        return cipher->gettable_params();
+        return cipher->gettable_params(
+                   ossl_provider_ctx(EVP_CIPHER_provider(cipher)));
     return NULL;
 }
 
 const OSSL_PARAM *EVP_CIPHER_settable_ctx_params(const EVP_CIPHER *cipher)
 {
     if (cipher != NULL && cipher->settable_ctx_params != NULL)
-        return cipher->settable_ctx_params();
+        return cipher->settable_ctx_params(
+                   ossl_provider_ctx(EVP_CIPHER_provider(cipher)));
     return NULL;
 }
 
 const OSSL_PARAM *EVP_CIPHER_gettable_ctx_params(const EVP_CIPHER *cipher)
 {
     if (cipher != NULL && cipher->gettable_ctx_params != NULL)
-        return cipher->gettable_ctx_params();
+        return cipher->gettable_ctx_params(
+                   ossl_provider_ctx(EVP_CIPHER_provider(cipher)));
     return NULL;
 }
+
+#ifndef FIPS_MODULE
+static OSSL_LIB_CTX *EVP_CIPHER_CTX_get_libctx(EVP_CIPHER_CTX *ctx)
+{
+    const EVP_CIPHER *cipher = ctx->cipher;
+    const OSSL_PROVIDER *prov;
+
+    if (cipher == NULL)
+        return NULL;
+
+    prov = EVP_CIPHER_provider(cipher);
+    return ossl_provider_libctx(prov);
+}
+#endif
 
 int EVP_CIPHER_CTX_rand_key(EVP_CIPHER_CTX *ctx, unsigned char *key)
 {
@@ -1188,9 +1197,10 @@ int EVP_CIPHER_CTX_rand_key(EVP_CIPHER_CTX *ctx, unsigned char *key)
 #else
     {
         int kl;
+        OSSL_LIB_CTX *libctx = EVP_CIPHER_CTX_get_libctx(ctx);
 
         kl = EVP_CIPHER_CTX_key_length(ctx);
-        if (kl <= 0 || RAND_priv_bytes(key, kl) <= 0)
+        if (kl <= 0 || RAND_priv_bytes_ex(libctx, key, kl) <= 0)
             return 0;
         return 1;
     }
@@ -1446,7 +1456,7 @@ static void evp_cipher_free(void *cipher)
     EVP_CIPHER_free(cipher);
 }
 
-EVP_CIPHER *EVP_CIPHER_fetch(OPENSSL_CTX *ctx, const char *algorithm,
+EVP_CIPHER *EVP_CIPHER_fetch(OSSL_LIB_CTX *ctx, const char *algorithm,
                              const char *properties)
 {
     EVP_CIPHER *cipher =
@@ -1484,7 +1494,7 @@ void EVP_CIPHER_free(EVP_CIPHER *cipher)
     OPENSSL_free(cipher);
 }
 
-void EVP_CIPHER_do_all_provided(OPENSSL_CTX *libctx,
+void EVP_CIPHER_do_all_provided(OSSL_LIB_CTX *libctx,
                                 void (*fn)(EVP_CIPHER *mac, void *arg),
                                 void *arg)
 {
