@@ -237,7 +237,7 @@ static int err_load_strings(const ERR_STRING_DATA *str)
     return 1;
 }
 
-int ERR_load_ERR_strings(void)
+int err_load_ERR_strings_int(void)
 {
 #ifndef OPENSSL_NO_ERR
     if (!RUN_ONCE(&err_string_init, do_err_strings_init))
@@ -251,7 +251,7 @@ int ERR_load_ERR_strings(void)
 
 int ERR_load_strings(int lib, ERR_STRING_DATA *str)
 {
-    if (ERR_load_ERR_strings() == 0)
+    if (err_load_ERR_strings_int() == 0)
         return 0;
 
     err_patch(lib, str);
@@ -261,7 +261,7 @@ int ERR_load_strings(int lib, ERR_STRING_DATA *str)
 
 int ERR_load_strings_const(const ERR_STRING_DATA *str)
 {
-    if (ERR_load_ERR_strings() == 0)
+    if (err_load_ERR_strings_int() == 0)
         return 0;
     err_load_strings(str);
     return 1;
@@ -838,7 +838,7 @@ int ERR_set_mark(void)
 
     if (es->bottom == es->top)
         return 0;
-    es->err_flags[es->top] |= ERR_FLAG_MARK;
+    es->err_marks[es->top]++;
     return 1;
 }
 
@@ -851,14 +851,14 @@ int ERR_pop_to_mark(void)
         return 0;
 
     while (es->bottom != es->top
-           && (es->err_flags[es->top] & ERR_FLAG_MARK) == 0) {
+           && es->err_marks[es->top] == 0) {
         err_clear(es, es->top, 0);
         es->top = es->top > 0 ? es->top - 1 : ERR_NUM_ERRORS - 1;
     }
 
     if (es->bottom == es->top)
         return 0;
-    es->err_flags[es->top] &= ~ERR_FLAG_MARK;
+    es->err_marks[es->top]--;
     return 1;
 }
 
@@ -873,13 +873,13 @@ int ERR_clear_last_mark(void)
 
     top = es->top;
     while (es->bottom != top
-           && (es->err_flags[top] & ERR_FLAG_MARK) == 0) {
+           && es->err_marks[top] == 0) {
         top = top > 0 ? top - 1 : ERR_NUM_ERRORS - 1;
     }
 
     if (es->bottom == top)
         return 0;
-    es->err_flags[top] &= ~ERR_FLAG_MARK;
+    es->err_marks[top]--;
     return 1;
 }
 

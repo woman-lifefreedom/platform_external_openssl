@@ -28,6 +28,7 @@
 # include <openssl/types.h>
 # include <openssl/bio.h>
 # include <openssl/lhash.h>
+# include <openssl/cryptoerr_legacy.h>
 
 #ifdef  __cplusplus
 extern "C" {
@@ -54,6 +55,7 @@ extern "C" {
 #  define ERR_NUM_ERRORS  16
 struct err_state_st {
     int err_flags[ERR_NUM_ERRORS];
+    int err_marks[ERR_NUM_ERRORS];
     unsigned long err_buffer[ERR_NUM_ERRORS];
     char *err_data[ERR_NUM_ERRORS];
     size_t err_data_size[ERR_NUM_ERRORS];
@@ -121,7 +123,7 @@ struct err_state_st {
 
 # define ERR_LIB_USER            128
 
-# if 1 || !defined(OPENSSL_NO_DEPRECATED_3_0)
+# ifndef OPENSSL_NO_DEPRECATED_3_0
 #  define ASN1err(f, r) ERR_raise_data(ERR_LIB_ASN1, (r), NULL)
 #  define ASYNCerr(f, r) ERR_raise_data(ERR_LIB_ASYNC, (r), NULL)
 #  define BIOerr(f, r) ERR_raise_data(ERR_LIB_BIO, (r), NULL)
@@ -464,7 +466,6 @@ void ERR_add_error_mem_bio(const char *sep, BIO *bio);
 int ERR_load_strings(int lib, ERR_STRING_DATA *str);
 int ERR_load_strings_const(const ERR_STRING_DATA *str);
 int ERR_unload_strings(int lib, ERR_STRING_DATA *str);
-int ERR_load_ERR_strings(void);
 
 #ifndef OPENSSL_NO_DEPRECATED_1_1_0
 # define ERR_load_crypto_strings() \

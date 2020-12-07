@@ -10,7 +10,6 @@
 #include <openssl/core_dispatch.h>
 #include <openssl/core_names.h>
 #include <openssl/params.h>
-#include <openssl/obj_mac.h> /* NIDs used by ossl_prov_util_nid_to_name() */
 #include <openssl/fips_names.h>
 #include <openssl/rand.h> /* RAND_get0_public() */
 #include "internal/cryptlib.h"
@@ -19,6 +18,7 @@
 #include "prov/providercommon.h"
 #include "prov/providercommonerr.h"
 #include "prov/provider_util.h"
+#include "prov/seeding.h"
 #include "self_test.h"
 
 static const char FIPS_DEFAULT_PROPERTIES[] = "provider=fips,fips=yes";
@@ -184,103 +184,6 @@ static int fips_self_test(void *provctx)
     return SELF_TEST_post(&selftest_params, 1) ? 1 : 0;
 }
 
-/* FIPS specific version of the function of the same name in provlib.c */
-/* TODO(3.0) - Is this function needed ? */
-const char *ossl_prov_util_nid_to_name(int nid)
-{
-    /* We don't have OBJ_nid2n() in FIPS_MODULE so we have an explicit list */
-
-    switch (nid) {
-    /* Digests */
-    case NID_sha1:
-        return "SHA1";
-    case NID_sha224:
-        return "SHA-224";
-    case NID_sha256:
-        return "SHA-256";
-    case NID_sha384:
-        return "SHA-384";
-    case NID_sha512:
-        return "SHA-512";
-    case NID_sha512_224:
-        return "SHA-512/224";
-    case NID_sha512_256:
-        return "SHA-512/256";
-    case NID_sha3_224:
-        return "SHA3-224";
-    case NID_sha3_256:
-        return "SHA3-256";
-    case NID_sha3_384:
-        return "SHA3-384";
-    case NID_sha3_512:
-        return "SHA3-512";
-
-    /* Ciphers */
-    case NID_aes_256_ecb:
-        return "AES-256-ECB";
-    case NID_aes_192_ecb:
-        return "AES-192-ECB";
-    case NID_aes_128_ecb:
-        return "AES-128-ECB";
-    case NID_aes_256_cbc:
-        return "AES-256-CBC";
-    case NID_aes_192_cbc:
-        return "AES-192-CBC";
-    case NID_aes_128_cbc:
-        return "AES-128-CBC";
-    case NID_aes_256_ctr:
-        return "AES-256-CTR";
-    case NID_aes_192_ctr:
-        return "AES-192-CTR";
-    case NID_aes_128_ctr:
-        return "AES-128-CTR";
-    case NID_aes_256_xts:
-        return "AES-256-XTS";
-    case NID_aes_128_xts:
-        return "AES-128-XTS";
-    case NID_aes_256_gcm:
-        return "AES-256-GCM";
-    case NID_aes_192_gcm:
-        return "AES-192-GCM";
-    case NID_aes_128_gcm:
-        return "AES-128-GCM";
-    case NID_aes_256_ccm:
-        return "AES-256-CCM";
-    case NID_aes_192_ccm:
-        return "AES-192-CCM";
-    case NID_aes_128_ccm:
-        return "AES-128-CCM";
-    case NID_id_aes256_wrap:
-        return "AES-256-WRAP";
-    case NID_id_aes192_wrap:
-        return "AES-192-WRAP";
-    case NID_id_aes128_wrap:
-        return "AES-128-WRAP";
-    case NID_id_aes256_wrap_pad:
-        return "AES-256-WRAP-PAD";
-    case NID_id_aes192_wrap_pad:
-        return "AES-192-WRAP-PAD";
-    case NID_id_aes128_wrap_pad:
-        return "AES-128-WRAP-PAD";
-    case NID_des_ede3_ecb:
-        return "DES-EDE3";
-    case NID_des_ede3_cbc:
-        return "DES-EDE3-CBC";
-    case NID_aes_256_cbc_hmac_sha256:
-        return "AES-256-CBC-HMAC-SHA256";
-    case NID_aes_128_cbc_hmac_sha256:
-        return "AES-128-CBC-HMAC-SHA256";
-    case NID_aes_256_cbc_hmac_sha1:
-        return "AES-256-CBC-HMAC-SHA1";
-    case NID_aes_128_cbc_hmac_sha1:
-        return "AES-128-CBC-HMAC-SHA1";
-    default:
-        break;
-    }
-
-    return NULL;
-}
-
 /*
  * For the algorithm names, we use the following formula for our primary
  * names:
@@ -384,6 +287,15 @@ static const OSSL_ALGORITHM_CAPABLE fips_ciphers[] = {
         ossl_aes192wrappad_functions),
     ALG("AES-128-WRAP-PAD:id-aes128-wrap-pad:AES128-WRAP-PAD",
         ossl_aes128wrappad_functions),
+    ALG("AES-256-WRAP-INV:AES256-WRAP-INV", ossl_aes256wrapinv_functions),
+    ALG("AES-192-WRAP-INV:AES192-WRAP-INV", ossl_aes192wrapinv_functions),
+    ALG("AES-128-WRAP-INV:AES128-WRAP-INV", ossl_aes128wrapinv_functions),
+    ALG("AES-256-WRAP-PAD-INV:AES256-WRAP-PAD-INV",
+        ossl_aes256wrappadinv_functions),
+    ALG("AES-192-WRAP-PAD-INV:AES192-WRAP-PAD-INV",
+        ossl_aes192wrappadinv_functions),
+    ALG("AES-128-WRAP-PAD-INV:AES128-WRAP-PAD-INV",
+        ossl_aes128wrappadinv_functions),
     ALGC("AES-128-CBC-HMAC-SHA1", ossl_aes128cbc_hmac_sha1_functions,
          ossl_cipher_capable_aes_cbc_hmac_sha1),
     ALGC("AES-256-CBC-HMAC-SHA1", ossl_aes256cbc_hmac_sha1_functions,
@@ -584,6 +496,8 @@ int OSSL_provider_init(const OSSL_CORE_HANDLE *handle,
     FIPS_GLOBAL *fgbl;
     OSSL_LIB_CTX *libctx = NULL;
 
+    if (!ossl_prov_seeding_from_dispatch(in))
+        return 0;
     for (; in->function_id != 0; in++) {
         switch (in->function_id) {
         case OSSL_FUNC_CORE_GET_LIBCTX:
@@ -664,10 +578,9 @@ int OSSL_provider_init(const OSSL_CORE_HANDLE *handle,
         case OSSL_FUNC_BIO_VSNPRINTF:
             c_BIO_vsnprintf = OSSL_FUNC_BIO_vsnprintf(in);
             break;
-        case OSSL_FUNC_SELF_TEST_CB: {
+        case OSSL_FUNC_SELF_TEST_CB:
             c_stcbfn = OSSL_FUNC_self_test_cb(in);
             break;
-        }
         default:
             /* Just ignore anything we don't understand */
             break;

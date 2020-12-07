@@ -28,6 +28,7 @@
 #include <openssl/err.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
+#include <openssl/http.h>
 #include <openssl/pem.h>
 #include <openssl/store.h>
 #include <openssl/pkcs12.h>
@@ -468,6 +469,11 @@ CONF *app_load_config_modules(const char *configfile)
     return conf;
 }
 
+#define IS_HTTP(uri) \
+    (strncmp(uri, OSSL_HTTP_PREFIX, strlen(OSSL_HTTP_PREFIX)) == 0)
+#define IS_HTTPS(uri) \
+    (strncmp(uri, OSSL_HTTPS_PREFIX, strlen(OSSL_HTTPS_PREFIX)) == 0)
+
 X509 *load_cert_pass(const char *uri, int maybe_stdin,
                      const char *pass, const char *desc)
 {
@@ -475,8 +481,13 @@ X509 *load_cert_pass(const char *uri, int maybe_stdin,
 
     if (desc == NULL)
         desc = "certificate";
-    (void)load_key_certs_crls(uri, maybe_stdin, pass, desc,
-                              NULL, NULL, &cert, NULL, NULL, NULL);
+    if (IS_HTTPS(uri))
+        BIO_printf(bio_err, "Loading %s over HTTPS is unsupported\n", desc);
+    else if (IS_HTTP(uri))
+        cert = X509_load_http(uri, NULL, NULL, 0 /* timeout */);
+    else
+        (void)load_key_certs_crls(uri, maybe_stdin, pass, desc,
+                                  NULL, NULL, NULL, &cert, NULL, NULL, NULL);
     if (cert == NULL) {
         BIO_printf(bio_err, "Unable to load %s\n", desc);
         ERR_print_errors(bio_err);
@@ -484,15 +495,19 @@ X509 *load_cert_pass(const char *uri, int maybe_stdin,
     return cert;
 }
 
-/* the format parameter is meanwhile not needed anymore and thus ignored */
-X509_CRL *load_crl(const char *uri, int format, const char *desc)
+X509_CRL *load_crl(const char *uri, const char *desc)
 {
     X509_CRL *crl = NULL;
 
     if (desc == NULL)
         desc = "CRL";
-    (void)load_key_certs_crls(uri, 0, NULL, desc,
-                              NULL,  NULL, NULL, NULL, &crl, NULL);
+    if (IS_HTTPS(uri))
+        BIO_printf(bio_err, "Loading %s over HTTPS is unsupported\n", desc);
+    else if (IS_HTTP(uri))
+        crl = X509_CRL_load_http(uri, NULL, NULL, 0 /* timeout */);
+    else
+        (void)load_key_certs_crls(uri, 0, NULL, desc,
+                                  NULL, NULL,  NULL, NULL, NULL, &crl, NULL);
     if (crl == NULL) {
         BIO_printf(bio_err, "Unable to load %s\n", desc);
         ERR_print_errors(bio_err);
@@ -559,13 +574,9 @@ EVP_PKEY *load_key(const char *uri, int format, int may_stdin,
         }
     } else {
         (void)load_key_certs_crls(uri, may_stdin, pass, desc,
-                                  &pkey, NULL, NULL, NULL, NULL, NULL);
+                                  &pkey, NULL, NULL, NULL, NULL, NULL, NULL);
     }
 
-    if (pkey == NULL) {
-        BIO_printf(bio_err, "Unable to load %s\n", desc);
-        ERR_print_errors(bio_err);
-    }
     return pkey;
 }
 
@@ -589,13 +600,31 @@ EVP_PKEY *load_pubkey(const char *uri, int format, int maybe_stdin,
         }
     } else {
         (void)load_key_certs_crls(uri, maybe_stdin, pass, desc,
-                                  NULL, &pkey, NULL, NULL, NULL, NULL);
+                                  NULL, &pkey, NULL, NULL, NULL, NULL, NULL);
     }
-    if (pkey == NULL) {
-        BIO_printf(bio_err, "Unable to load %s\n", desc);
-        ERR_print_errors(bio_err);
-    }
+
     return pkey;
+}
+
+EVP_PKEY *load_keyparams(const char *uri, int maybe_stdin, const char *keytype,
+                         const char *desc)
+{
+    EVP_PKEY *params = NULL;
+
+    if (desc == NULL)
+        desc = "key parameters";
+
+    (void)load_key_certs_crls(uri, maybe_stdin, NULL, desc,
+                              NULL, NULL, &params, NULL, NULL, NULL, NULL);
+    if (params != NULL && keytype != NULL && !EVP_PKEY_is_a(params, keytype)) {
+        BIO_printf(bio_err,
+                   "Unable to load %s from %s (unexpected parameters type)\n",
+                   desc, uri);
+        ERR_print_errors(bio_err);
+        EVP_PKEY_free(params);
+        params = NULL;
+    }
+    return params;
 }
 
 void app_bail_out(char *fmt, ...)
@@ -627,7 +656,7 @@ int load_certs(const char *uri, STACK_OF(X509) **certs,
                const char *pass, const char *desc)
 {
     int was_NULL = *certs == NULL;
-    int ret = load_key_certs_crls(uri, 0, pass, desc, NULL, NULL,
+    int ret = load_key_certs_crls(uri, 0, pass, desc, NULL, NULL, NULL,
                                   NULL, certs, NULL, NULL);
 
     if (!ret && was_NULL) {
@@ -645,7 +674,7 @@ int load_crls(const char *uri, STACK_OF(X509_CRL) **crls,
               const char *pass, const char *desc)
 {
     int was_NULL = *crls == NULL;
-    int ret = load_key_certs_crls(uri, 0, pass, desc, NULL, NULL,
+    int ret = load_key_certs_crls(uri, 0, pass, desc, NULL, NULL, NULL,
                                   NULL, NULL, NULL, crls);
 
     if (!ret && was_NULL) {
@@ -671,6 +700,7 @@ int load_crls(const char *uri, STACK_OF(X509_CRL) **crls,
 int load_key_certs_crls(const char *uri, int maybe_stdin,
                         const char *pass, const char *desc,
                         EVP_PKEY **ppkey, EVP_PKEY **ppubkey,
+                        EVP_PKEY **pparams,
                         X509 **pcert, STACK_OF(X509) **pcerts,
                         X509_CRL **pcrl, STACK_OF(X509_CRL) **pcrls)
 {
@@ -682,8 +712,9 @@ int load_key_certs_crls(const char *uri, int maybe_stdin,
     int ncrls = 0;
     const char *failed =
         ppkey != NULL ? "key" : ppubkey != NULL ? "public key" :
-        pcert != NULL ? "cert" : pcrl != NULL ? "CRL" :
-        pcerts != NULL ? "certs" : pcrls != NULL ? "CRLs" : NULL;
+        pparams != NULL ? "params" : pcert != NULL ? "cert" :
+        pcrl != NULL ? "CRL" : pcerts != NULL ? "certs" :
+        pcrls != NULL ? "CRLs" : NULL;
     /* TODO make use of the engine reference 'eng' when loading pkeys */
 
     if (ppkey != NULL)
@@ -761,6 +792,10 @@ int load_key_certs_crls(const char *uri, int maybe_stdin,
             if (ppubkey != NULL && *ppubkey == NULL)
                 ok = ((*ppubkey = OSSL_STORE_INFO_get1_PUBKEY(info)) != NULL);
             break;
+        case OSSL_STORE_INFO_PARAMS:
+            if (pparams != NULL && *pparams == NULL)
+                ok = ((*pparams = OSSL_STORE_INFO_get1_PARAMS(info)) != NULL);
+            break;
         case OSSL_STORE_INFO_CERT:
             if (pcert != NULL && *pcert == NULL)
                 ok = (*pcert = OSSL_STORE_INFO_get1_CERT(info)) != NULL;
@@ -794,8 +829,11 @@ int load_key_certs_crls(const char *uri, int maybe_stdin,
     if (failed == NULL) {
         int any = 0;
 
-        if (ppkey != NULL && *ppkey == NULL) {
+        if ((ppkey != NULL && *ppkey == NULL)
+            || (ppubkey != NULL && *ppubkey == NULL)) {
             failed = "key";
+        } else if (pparams != NULL && *pparams == NULL) {
+            failed = "params";
         } else if ((pcert != NULL || pcerts != NULL) && ncerts == 0) {
             if (pcert == NULL)
                 any = 1;
@@ -1871,7 +1909,8 @@ static const char *get_dp_url(DIST_POINT *dp)
         uri = GENERAL_NAME_get0_value(gen, &gtype);
         if (gtype == GEN_URI && ASN1_STRING_length(uri) > 6) {
             const char *uptr = (const char *)ASN1_STRING_get0_data(uri);
-            if (strncmp(uptr, "http://", 7) == 0)
+
+            if (IS_HTTP(uptr)) /* can/should not use HTTPS here */
                 return uptr;
         }
     }
@@ -1891,7 +1930,7 @@ static X509_CRL *load_crl_crldp(STACK_OF(DIST_POINT) *crldp)
         DIST_POINT *dp = sk_DIST_POINT_value(crldp, i);
         urlptr = get_dp_url(dp);
         if (urlptr)
-            return load_crl(urlptr, FORMAT_HTTP, "CRL via CDP");
+            return load_crl(urlptr, "CRL via CDP");
     }
     return NULL;
 }
@@ -2013,15 +2052,15 @@ ASN1_VALUE *app_http_get_asn1(const char *url, const char *proxy,
     ASN1_VALUE *resp = NULL;
 
     if (url == NULL || it == NULL) {
-        HTTPerr(0, ERR_R_PASSED_NULL_PARAMETER);
+        ERR_raise(ERR_LIB_HTTP, ERR_R_PASSED_NULL_PARAMETER);
         return NULL;
     }
 
     if (!OSSL_HTTP_parse_url(url, &server, &port, NULL, NULL, &use_ssl))
         return NULL;
     if (use_ssl && ssl_ctx == NULL) {
-        HTTPerr(0, ERR_R_PASSED_NULL_PARAMETER);
-        ERR_add_error_data(1, "missing SSL_CTX");
+        ERR_raise_data(ERR_LIB_HTTP, ERR_R_PASSED_NULL_PARAMETER,
+                       "missing SSL_CTX");
         goto end;
     }
 

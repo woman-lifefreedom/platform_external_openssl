@@ -42,11 +42,12 @@ extern "C" {
  * This set of parameter names is explained in detail in provider-object(7)
  * (doc/man7/provider-object.pod)
  */
-#define OSSL_OBJECT_PARAM_TYPE       "type"      /* INTEGER */
-#define OSSL_OBJECT_PARAM_DATA_TYPE  "data-type" /* UTF8_STRING */
-#define OSSL_OBJECT_PARAM_REFERENCE  "reference" /* OCTET_STRING */
-#define OSSL_OBJECT_PARAM_DATA       "data" /* OCTET_STRING or UTF8_STRING */
-#define OSSL_OBJECT_PARAM_DESC       "desc"      /* UTF8_STRING */
+#define OSSL_OBJECT_PARAM_TYPE              "type"      /* INTEGER */
+#define OSSL_OBJECT_PARAM_DATA_TYPE         "data-type" /* UTF8_STRING */
+#define OSSL_OBJECT_PARAM_DATA_STRUCTURE    "data-structure" /* UTF8_STRING */
+#define OSSL_OBJECT_PARAM_REFERENCE         "reference" /* OCTET_STRING */
+#define OSSL_OBJECT_PARAM_DATA              "data" /* OCTET_STRING or UTF8_STRING */
+#define OSSL_OBJECT_PARAM_DESC              "desc"      /* UTF8_STRING */
 
 /*
  * Algorithm parameters
@@ -200,6 +201,8 @@ extern "C" {
 #define OSSL_KDF_PARAM_CIPHER       OSSL_ALG_PARAM_CIPHER     /* utf8 string */
 #define OSSL_KDF_PARAM_CONSTANT     "constant"  /* octet string */
 #define OSSL_KDF_PARAM_PKCS12_ID    "id"        /* int */
+#define OSSL_KDF_PARAM_KBKDF_USE_L  "use-l"             /* int */
+#define OSSL_KDF_PARAM_KBKDF_USE_SEPARATOR  "use-separator"     /* int */
 
 /* Known KDF names */
 #define OSSL_KDF_NAME_HKDF          "HKDF"
@@ -216,13 +219,13 @@ extern "C" {
 /* Known RAND names */
 #define OSSL_RAND_PARAM_STATE                   "state"
 #define OSSL_RAND_PARAM_STRENGTH                "strength"
+#define OSSL_RAND_PARAM_MAX_REQUEST             "max_request"
 #define OSSL_RAND_PARAM_TEST_ENTROPY            "test_entropy"
 #define OSSL_RAND_PARAM_TEST_NONCE              "test_nonce"
 
 /* RAND/DRBG names */
 #define OSSL_DRBG_PARAM_RESEED_REQUESTS         "reseed_requests"
 #define OSSL_DRBG_PARAM_RESEED_TIME_INTERVAL    "reseed_time_interval"
-#define OSSL_DRBG_PARAM_MAX_REQUEST             "max_request"
 #define OSSL_DRBG_PARAM_MIN_ENTROPYLEN          "min_entropylen"
 #define OSSL_DRBG_PARAM_MAX_ENTROPYLEN          "max_entropylen"
 #define OSSL_DRBG_PARAM_MIN_NONCELEN            "min_noncelen"
@@ -261,7 +264,7 @@ extern "C" {
 #define OSSL_PKEY_PARAM_MASKGENFUNC         "mgf"
 #define OSSL_PKEY_PARAM_MGF1_DIGEST         "mgf1-digest"
 #define OSSL_PKEY_PARAM_MGF1_PROPERTIES     "mgf1-properties"
-#define OSSL_PKEY_PARAM_TLS_ENCODED_PT      "tls-encoded-pt"
+#define OSSL_PKEY_PARAM_ENCODED_PUBLIC_KEY  "encoded-pub-key"
 #define OSSL_PKEY_PARAM_GROUP_NAME          "group"
 #define OSSL_PKEY_PARAM_DIST_ID             "distid"
 #define OSSL_PKEY_PARAM_PUB_KEY             "pub"
@@ -450,13 +453,15 @@ extern "C" {
 /*
  * Encoder / decoder parameters
  */
-#define OSSL_ENCODER_PARAM_CIPHER       OSSL_ALG_PARAM_CIPHER
-#define OSSL_ENCODER_PARAM_PROPERTIES   OSSL_ALG_PARAM_PROPERTIES
-#define OSSL_ENCODER_PARAM_INPUT_TYPE   "input-type"
-#define OSSL_ENCODER_PARAM_OUTPUT_TYPE  "output-type"
+#define OSSL_ENCODER_PARAM_CIPHER           OSSL_ALG_PARAM_CIPHER
+#define OSSL_ENCODER_PARAM_PROPERTIES       OSSL_ALG_PARAM_PROPERTIES
+#define OSSL_ENCODER_PARAM_INPUT_TYPE       "input-type"
+#define OSSL_ENCODER_PARAM_OUTPUT_TYPE      "output-type"
+#define OSSL_ENCODER_PARAM_OUTPUT_STRUCTURE "output-structure"
 
-#define OSSL_DECODER_PARAM_PROPERTIES   OSSL_ALG_PARAM_PROPERTIES
-#define OSSL_DECODER_PARAM_INPUT_TYPE   "input-type"
+#define OSSL_DECODER_PARAM_PROPERTIES       OSSL_ALG_PARAM_PROPERTIES
+#define OSSL_DECODER_PARAM_INPUT_TYPE       "input-type"
+#define OSSL_DECODER_PARAM_INPUT_STRUCTURE  "input-structure"
 
 /* Passphrase callback parameters */
 #define OSSL_PASSPHRASE_PARAM_INFO      "info"

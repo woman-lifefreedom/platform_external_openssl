@@ -1,9 +1,9 @@
 .text	
 .align	16
 
-.globl	md5_block_asm_data_order
-.type	md5_block_asm_data_order,@function
-md5_block_asm_data_order:
+.globl	ossl_md5_block_asm_data_order
+.type	ossl_md5_block_asm_data_order,@function
+ossl_md5_block_asm_data_order:
 .cfi_startproc	
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
@@ -680,7 +680,7 @@ md5_block_asm_data_order:
 .Lepilogue:
 	.byte	0xf3,0xc3
 .cfi_endproc	
-.size	md5_block_asm_data_order,.-md5_block_asm_data_order
+.size	ossl_md5_block_asm_data_order,.-ossl_md5_block_asm_data_order
 	.section ".note.gnu.property", "a"
 	.p2align 3
 	.long 1f - 0f

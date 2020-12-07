@@ -46,8 +46,7 @@ set(crypto_srcs
         crypto/asn1/evp_asn1.c
         crypto/asn1/f_int.c
         crypto/asn1/f_string.c
-        crypto/asn1/i2d_pr.c
-        crypto/asn1/i2d_pu.c
+        crypto/asn1/i2d_evp.c
         crypto/asn1/n_pkey.c
         crypto/asn1/nsseq.c
         crypto/asn1/p5_pbe.c
@@ -379,11 +378,13 @@ set(crypto_srcs
         crypto/evp/pbe_scrypt.c
         crypto/evp/p_dec.c
         crypto/evp/p_enc.c
+        crypto/evp/p_legacy.c
         crypto/evp/p_lib.c
         crypto/evp/p_open.c
         crypto/evp/p_seal.c
         crypto/evp/p_sign.c
         crypto/evp/p_verify.c
+        crypto/evp/pmeth_check.c
         crypto/evp/pmeth_gn.c
         crypto/evp/pmeth_lib.c
         crypto/evp/evp_rand.c
@@ -493,10 +494,12 @@ set(crypto_srcs
         crypto/property/property_parse.c
         crypto/property/property_string.c
         crypto/punycode.c
+        crypto/rand/prov_seed.c
         crypto/rand/rand_egd.c
         crypto/rand/rand_err.c
         crypto/rand/rand_lib.c
         crypto/rand/rand_meth.c
+        crypto/rand/rand_pool.c
         crypto/rand/randfile.c
         crypto/rc2/rc2_cbc.c
         crypto/rc2/rc2_ecb.c
@@ -768,10 +771,10 @@ set(provider_srcs
         providers/common/der/der_sm2_sig.c
         providers/common/der/der_wrap_gen.c
         providers/common/digest_to_nid.c
-        providers/common/nid_to_name.c
         providers/common/provider_ctx.c
         providers/common/provider_util.c
         providers/common/provider_err.c
+        providers/common/provider_seeding.c
         providers/common/securitycheck.c
         providers/common/securitycheck_default.c
         providers/baseprov.c
@@ -885,7 +888,6 @@ set(provider_srcs
         providers/implementations/rands/drbg_ctr.c
         providers/implementations/rands/drbg_hash.c
         providers/implementations/rands/drbg_hmac.c
-        providers/implementations/rands/rand_pool.c
         providers/implementations/rands/seeding/rand_unix.c
         providers/implementations/rands/test_rng.c
         providers/implementations/signature/dsa.c
@@ -1021,6 +1023,7 @@ set(ssl_srcs
         ssl/ssl_lib.c
         ssl/ssl_mcnf.c
         ssl/ssl_rsa.c
+        ssl/ssl_rsa_legacy.c
         ssl/ssl_sess.c
         ssl/ssl_stat.c
         ssl/ssl_txt.c
@@ -1037,6 +1040,7 @@ set(ssl_srcs
         ssl/t1_enc.c
         ssl/t1_lib.c
         ssl/t1_trce.c
+        ssl/tls_depr.c
         ssl/tls_srp.c
         ssl/tls13_enc.c
         )

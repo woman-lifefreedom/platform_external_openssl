@@ -73,14 +73,14 @@ static DH *dh_new_intern(ENGINE *engine, OSSL_LIB_CTX *libctx)
     DH *ret = OPENSSL_zalloc(sizeof(*ret));
 
     if (ret == NULL) {
-        DHerr(0, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_DH, ERR_R_MALLOC_FAILURE);
         return NULL;
     }
 
     ret->references = 1;
     ret->lock = CRYPTO_THREAD_lock_new();
     if (ret->lock == NULL) {
-        DHerr(0, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_DH, ERR_R_MALLOC_FAILURE);
         OPENSSL_free(ret);
         return NULL;
     }
@@ -91,7 +91,7 @@ static DH *dh_new_intern(ENGINE *engine, OSSL_LIB_CTX *libctx)
     ret->flags = ret->meth->flags;  /* early default init */
     if (engine) {
         if (!ENGINE_init(engine)) {
-            DHerr(0, ERR_R_ENGINE_LIB);
+            ERR_raise(ERR_LIB_DH, ERR_R_ENGINE_LIB);
             goto err;
         }
         ret->engine = engine;
@@ -100,7 +100,7 @@ static DH *dh_new_intern(ENGINE *engine, OSSL_LIB_CTX *libctx)
     if (ret->engine) {
         ret->meth = ENGINE_get_DH(ret->engine);
         if (ret->meth == NULL) {
-            DHerr(0, ERR_R_ENGINE_LIB);
+            ERR_raise(ERR_LIB_DH, ERR_R_ENGINE_LIB);
             goto err;
         }
     }
@@ -114,7 +114,7 @@ static DH *dh_new_intern(ENGINE *engine, OSSL_LIB_CTX *libctx)
 #endif /* FIPS_MODULE */
 
     if ((ret->meth->init != NULL) && !ret->meth->init(ret)) {
-        DHerr(0, ERR_R_INIT_FAIL);
+        ERR_raise(ERR_LIB_DH, ERR_R_INIT_FAIL);
         goto err;
     }
 
@@ -219,18 +219,6 @@ int DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g)
 
     ossl_ffc_params_set0_pqg(&dh->params, p, q, g);
     dh_cache_named_group(dh);
-    if (q != NULL)
-        dh->length = BN_num_bits(q);
-    /*
-     * Check if this is a named group. If it finds a named group then the
-     * 'q' and 'length' value are either already set or are set by the
-     * call.
-     */
-    if (DH_get_nid(dh) == NID_undef) {
-        /* If its not a named group then set the 'length' if q is not NULL */
-        if (q != NULL)
-            dh->length = BN_num_bits(q);
-    }
     dh->dirty_cnt++;
     return 1;
 }
@@ -243,6 +231,7 @@ long DH_get_length(const DH *dh)
 int DH_set_length(DH *dh, long length)
 {
     dh->length = length;
+    dh->dirty_cnt++;
     return 1;
 }
 
@@ -263,7 +252,6 @@ int DH_set0_key(DH *dh, BIGNUM *pub_key, BIGNUM *priv_key)
     if (priv_key != NULL) {
         BN_clear_free(dh->priv_key);
         dh->priv_key = priv_key;
-        dh->length = BN_num_bits(priv_key);
     }
 
     dh->dirty_cnt++;
@@ -324,23 +312,4 @@ FFC_PARAMS *dh_get0_params(DH *dh)
 int dh_get0_nid(const DH *dh)
 {
     return dh->params.nid;
-}
-
-int dh_ffc_params_fromdata(DH *dh, const OSSL_PARAM params[])
-{
-    int ret;
-    FFC_PARAMS *ffc;
-
-    if (dh == NULL)
-        return 0;
-    ffc = dh_get0_params(dh);
-    if (ffc == NULL)
-        return 0;
-
-    ret = ossl_ffc_params_fromdata(ffc, params);
-    if (ret) {
-        dh_cache_named_group(dh);
-        dh->dirty_cnt++;
-    }
-    return ret;
 }

@@ -58,6 +58,7 @@
 #ifndef	__KERNEL__
 # include "arm_arch.h"
 
+.hidden	OPENSSL_armcap_P
 #endif
 
 .text
@@ -2048,6 +2049,3 @@ sha256_block_neon:
 	add	sp,sp,#16*4+16
 	ret
 .size	sha256_block_neon,.-sha256_block_neon
-#if !defined(__KERNEL__) && !defined(_WIN64)
-.comm	OPENSSL_armcap_P,4,4
-#endif

@@ -200,6 +200,11 @@ static void *encoder_from_dispatch(int id, const OSSL_ALGORITHM *algodef,
                 encoder->settable_ctx_params =
                     OSSL_FUNC_encoder_settable_ctx_params(fns);
             break;
+        case OSSL_FUNC_ENCODER_DOES_SELECTION:
+            if (encoder->does_selection == NULL)
+                encoder->does_selection =
+                    OSSL_FUNC_encoder_does_selection(fns);
+            break;
         case OSSL_FUNC_ENCODER_ENCODE:
             if (encoder->encode == NULL)
                 encoder->encode = OSSL_FUNC_encoder_encode(fns);
@@ -503,6 +508,7 @@ OSSL_ENCODER_CTX *OSSL_ENCODER_CTX_new(void)
 int OSSL_ENCODER_CTX_set_params(OSSL_ENCODER_CTX *ctx,
                                 const OSSL_PARAM params[])
 {
+    int ok = 1;
     size_t i;
     size_t l;
 
@@ -524,9 +530,9 @@ int OSSL_ENCODER_CTX_set_params(OSSL_ENCODER_CTX *ctx,
         if (encoderctx == NULL || encoder->set_ctx_params == NULL)
             continue;
         if (!encoder->set_ctx_params(encoderctx, params))
-            return 0;
+            ok = 0;
     }
-    return 1;
+    return ok;
 }
 
 void OSSL_ENCODER_CTX_free(OSSL_ENCODER_CTX *ctx)

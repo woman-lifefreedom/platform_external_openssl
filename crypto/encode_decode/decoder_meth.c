@@ -198,6 +198,11 @@ void *ossl_decoder_from_dispatch(int id, const OSSL_ALGORITHM *algodef,
                 decoder->settable_ctx_params =
                     OSSL_FUNC_decoder_settable_ctx_params(fns);
             break;
+        case OSSL_FUNC_DECODER_DOES_SELECTION:
+            if (decoder->does_selection == NULL)
+                decoder->does_selection =
+                    OSSL_FUNC_decoder_does_selection(fns);
+            break;
         case OSSL_FUNC_DECODER_DECODE:
             if (decoder->decode == NULL)
                 decoder->decode = OSSL_FUNC_decoder_decode(fns);
@@ -493,6 +498,7 @@ OSSL_DECODER_CTX *OSSL_DECODER_CTX_new(void)
 int OSSL_DECODER_CTX_set_params(OSSL_DECODER_CTX *ctx,
                                 const OSSL_PARAM params[])
 {
+    int ok = 1;
     size_t i;
     size_t l;
 
@@ -516,9 +522,9 @@ int OSSL_DECODER_CTX_set_params(OSSL_DECODER_CTX *ctx,
         if (decoderctx == NULL || decoder->set_ctx_params == NULL)
             continue;
         if (!decoder->set_ctx_params(decoderctx, params))
-            return 0;
+            ok = 0;
     }
-    return 1;
+    return ok;
 }
 
 void OSSL_DECODER_CTX_free(OSSL_DECODER_CTX *ctx)

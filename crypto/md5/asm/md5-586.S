@@ -1,9 +1,9 @@
 .text
-.globl	md5_block_asm_data_order
-.type	md5_block_asm_data_order,@function
+.globl	ossl_md5_block_asm_data_order
+.type	ossl_md5_block_asm_data_order,@function
 .align	16
-md5_block_asm_data_order:
-.L_md5_block_asm_data_order_begin:
+ossl_md5_block_asm_data_order:
+.L_ossl_md5_block_asm_data_order_begin:
 .byte	243,15,30,251
 	pushl	%esi
 	pushl	%edi
@@ -676,7 +676,7 @@ md5_block_asm_data_order:
 	popl	%edi
 	popl	%esi
 	ret
-.size	md5_block_asm_data_order,.-.L_md5_block_asm_data_order_begin
+.size	ossl_md5_block_asm_data_order,.-.L_ossl_md5_block_asm_data_order_begin
 
 	.section ".note.gnu.property", "a"
 	.p2align 2

@@ -58,6 +58,7 @@
 #ifndef	__KERNEL__
 # include "arm_arch.h"
 
+.hidden	OPENSSL_armcap_P
 #endif
 
 .text
@@ -1602,7 +1603,4 @@ sha512_block_armv8:
 	ldr	x29,[sp],#16
 	ret
 .size	sha512_block_armv8,.-sha512_block_armv8
-#endif
-#if !defined(__KERNEL__) && !defined(_WIN64)
-.comm	OPENSSL_armcap_P,4,4
 #endif
