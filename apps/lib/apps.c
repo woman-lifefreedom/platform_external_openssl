@@ -34,11 +34,11 @@
 #include <openssl/pkcs12.h>
 #include <openssl/ui.h>
 #include <openssl/safestack.h>
-#ifndef OPENSSL_NO_RSA
-# include <openssl/rsa.h>
-#endif
+#include <openssl/rsa.h>
 #include <openssl/bn.h>
 #include <openssl/ssl.h>
+#include <openssl/store.h>
+#include "s_apps.h"
 #include "apps.h"
 
 #ifdef _WIN32
@@ -558,25 +558,18 @@ EVP_PKEY *load_key(const char *uri, int format, int may_stdin,
                    const char *pass, ENGINE *e, const char *desc)
 {
     EVP_PKEY *pkey = NULL;
+    char *allocated_uri = NULL;
 
     if (desc == NULL)
         desc = "private key";
 
     if (format == FORMAT_ENGINE) {
-        if (e == NULL) {
-            BIO_printf(bio_err, "No engine specified for loading %s\n", desc);
-        } else {
-            pkey = load_engine_private_key(e, uri, pass, desc);
-            if (pkey == NULL) {
-                BIO_printf(bio_err, "Cannot load %s from engine\n", desc);
-                ERR_print_errors(bio_err);
-            }
-        }
-    } else {
-        (void)load_key_certs_crls(uri, may_stdin, pass, desc,
-                                  &pkey, NULL, NULL, NULL, NULL, NULL, NULL);
+        uri = allocated_uri = make_engine_uri(e, uri, desc);
     }
+    (void)load_key_certs_crls(uri, may_stdin, pass, desc,
+                              &pkey, NULL, NULL, NULL, NULL, NULL, NULL);
 
+    OPENSSL_free(allocated_uri);
     return pkey;
 }
 
@@ -584,25 +577,18 @@ EVP_PKEY *load_pubkey(const char *uri, int format, int maybe_stdin,
                       const char *pass, ENGINE *e, const char *desc)
 {
     EVP_PKEY *pkey = NULL;
+    char *allocated_uri = NULL;
 
     if (desc == NULL)
         desc = "public key";
 
     if (format == FORMAT_ENGINE) {
-        if (e == NULL) {
-            BIO_printf(bio_err, "No engine specified for loading %s\n", desc);
-        } else {
-            pkey = load_engine_public_key(e, uri, pass, desc);
-            if (pkey == NULL) {
-                BIO_printf(bio_err, "Cannot load %s from engine\n", desc);
-                ERR_print_errors(bio_err);
-            }
-        }
-    } else {
-        (void)load_key_certs_crls(uri, maybe_stdin, pass, desc,
-                                  NULL, &pkey, NULL, NULL, NULL, NULL, NULL);
+        uri = allocated_uri = make_engine_uri(e, uri, desc);
     }
+    (void)load_key_certs_crls(uri, maybe_stdin, pass, desc,
+                              NULL, &pkey, NULL, NULL, NULL, NULL, NULL);
 
+    OPENSSL_free(allocated_uri);
     return pkey;
 }
 
@@ -715,14 +701,25 @@ int load_key_certs_crls(const char *uri, int maybe_stdin,
         pparams != NULL ? "params" : pcert != NULL ? "cert" :
         pcrl != NULL ? "CRL" : pcerts != NULL ? "certs" :
         pcrls != NULL ? "CRLs" : NULL;
+    int cnt_expectations = 0;
+    int expect = 0;
     /* TODO make use of the engine reference 'eng' when loading pkeys */
 
-    if (ppkey != NULL)
+    if (ppkey != NULL) {
         *ppkey = NULL;
-    if (ppubkey != NULL)
+        cnt_expectations++;
+        expect = OSSL_STORE_INFO_PKEY;
+    }
+    if (ppubkey != NULL) {
         *ppubkey = NULL;
-    if (pcert != NULL)
+        cnt_expectations++;
+        expect = OSSL_STORE_INFO_PUBKEY;
+    }
+    if (pcert != NULL) {
         *pcert = NULL;
+        cnt_expectations++;
+        expect = OSSL_STORE_INFO_CERT;
+    }
     if (failed == NULL) {
         BIO_printf(bio_err, "Internal error: nothing to load into from %s\n",
                    uri != NULL ? uri : "<stdin>");
@@ -733,13 +730,22 @@ int load_key_certs_crls(const char *uri, int maybe_stdin,
             && (*pcerts = sk_X509_new_null()) == NULL) {
         BIO_printf(bio_err, "Out of memory loading");
         goto end;
+    } else {
+        cnt_expectations++;
+        expect = OSSL_STORE_INFO_CERT;
     }
-    if (pcrl != NULL)
+    if (pcrl != NULL) {
         *pcrl = NULL;
+        cnt_expectations++;
+        expect = OSSL_STORE_INFO_CRL;
+    }
     if (pcrls != NULL && *pcrls == NULL
             && (*pcrls = sk_X509_CRL_new_null()) == NULL) {
         BIO_printf(bio_err, "Out of memory loading");
         goto end;
+    } else {
+        cnt_expectations++;
+        expect = OSSL_STORE_INFO_CRL;
     }
 
     uidata.password = pass;
@@ -766,6 +772,11 @@ int load_key_certs_crls(const char *uri, int maybe_stdin,
         BIO_printf(bio_err, "Could not open file or uri for loading");
         goto end;
     }
+
+    if (cnt_expectations != 1)
+        expect = 0;
+    if (!OSSL_STORE_expect(ctx, expect))
+        goto end;
 
     failed = NULL;
     while (!OSSL_STORE_eof(ctx)) {
@@ -1891,6 +1902,152 @@ void print_cert_checks(BIO *bio, X509 *x,
         BIO_printf(bio, "IP %s does%s match certificate\n",
                    checkip, X509_check_ip_asc(x, checkip, 0) ? "" : " NOT");
     }
+}
+
+static int do_pkey_ctx_init(EVP_PKEY_CTX *pkctx, STACK_OF(OPENSSL_STRING) *opts)
+{
+    int i;
+
+    if (opts == NULL)
+        return 1;
+
+    for (i = 0; i < sk_OPENSSL_STRING_num(opts); i++) {
+        char *opt = sk_OPENSSL_STRING_value(opts, i);
+        if (pkey_ctrl_string(pkctx, opt) <= 0) {
+            BIO_printf(bio_err, "parameter error \"%s\"\n", opt);
+            ERR_print_errors(bio_err);
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+static int do_x509_init(X509 *x, STACK_OF(OPENSSL_STRING) *opts)
+{
+    int i;
+
+    if (opts == NULL)
+        return 1;
+
+    for (i = 0; i < sk_OPENSSL_STRING_num(opts); i++) {
+        char *opt = sk_OPENSSL_STRING_value(opts, i);
+        if (x509_ctrl_string(x, opt) <= 0) {
+            BIO_printf(bio_err, "parameter error \"%s\"\n", opt);
+            ERR_print_errors(bio_err);
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+static int do_x509_req_init(X509_REQ *x, STACK_OF(OPENSSL_STRING) *opts)
+{
+    int i;
+
+    if (opts == NULL)
+        return 1;
+
+    for (i = 0; i < sk_OPENSSL_STRING_num(opts); i++) {
+        char *opt = sk_OPENSSL_STRING_value(opts, i);
+        if (x509_req_ctrl_string(x, opt) <= 0) {
+            BIO_printf(bio_err, "parameter error \"%s\"\n", opt);
+            ERR_print_errors(bio_err);
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+static int do_sign_init(EVP_MD_CTX *ctx, EVP_PKEY *pkey,
+                        const EVP_MD *md, STACK_OF(OPENSSL_STRING) *sigopts)
+{
+    EVP_PKEY_CTX *pkctx = NULL;
+    int def_nid;
+
+    if (ctx == NULL)
+        return 0;
+    /*
+     * EVP_PKEY_get_default_digest_nid() returns 2 if the digest is mandatory
+     * for this algorithm.
+     */
+    if (EVP_PKEY_get_default_digest_nid(pkey, &def_nid) == 2
+            && def_nid == NID_undef) {
+        /* The signing algorithm requires there to be no digest */
+        md = NULL;
+    }
+    return EVP_DigestSignInit(ctx, &pkctx, md, NULL, pkey)
+        && do_pkey_ctx_init(pkctx, sigopts);
+}
+
+/* Ensure RFC 5280 compliance and then sign the certificate info */
+int do_X509_sign(X509 *cert, EVP_PKEY *pkey, const EVP_MD *md,
+                 STACK_OF(OPENSSL_STRING) *sigopts)
+{
+    const STACK_OF(X509_EXTENSION) *exts = X509_get0_extensions(cert);
+    EVP_MD_CTX *mctx = EVP_MD_CTX_new();
+    int rv = 0;
+
+    if (sk_X509_EXTENSION_num(exts /* may be NULL */) > 0) {
+        /* Prevent X509_V_ERR_EXTENSIONS_REQUIRE_VERSION_3 */
+        if (!X509_set_version(cert, 2)) /* Make sure cert is X509 v3 */
+            goto end;
+
+        /* TODO any further measures for ensuring default RFC 5280 compliance */
+    }
+
+    if (mctx != NULL && do_sign_init(mctx, pkey, md, sigopts) > 0)
+        rv = (X509_sign_ctx(cert, mctx) > 0);
+ end:
+    EVP_MD_CTX_free(mctx);
+    return rv;
+}
+
+/* Sign the certificate request info */
+int do_X509_REQ_sign(X509_REQ *x, EVP_PKEY *pkey, const EVP_MD *md,
+                     STACK_OF(OPENSSL_STRING) *sigopts)
+{
+    int rv = 0;
+    EVP_MD_CTX *mctx = EVP_MD_CTX_new();
+
+    if (do_sign_init(mctx, pkey, md, sigopts) > 0)
+        rv = (X509_REQ_sign_ctx(x, mctx) > 0);
+    EVP_MD_CTX_free(mctx);
+    return rv;
+}
+
+/* Sign the CRL info */
+int do_X509_CRL_sign(X509_CRL *x, EVP_PKEY *pkey, const EVP_MD *md,
+                     STACK_OF(OPENSSL_STRING) *sigopts)
+{
+    int rv = 0;
+    EVP_MD_CTX *mctx = EVP_MD_CTX_new();
+
+    if (do_sign_init(mctx, pkey, md, sigopts) > 0)
+        rv = (X509_CRL_sign_ctx(x, mctx) > 0);
+    EVP_MD_CTX_free(mctx);
+    return rv;
+}
+
+int do_X509_verify(X509 *x, EVP_PKEY *pkey, STACK_OF(OPENSSL_STRING) *vfyopts)
+{
+    int rv = 0;
+
+    if (do_x509_init(x, vfyopts) > 0)
+        rv = (X509_verify(x, pkey) > 0);
+    return rv;
+}
+
+int do_X509_REQ_verify(X509_REQ *x, EVP_PKEY *pkey,
+                       STACK_OF(OPENSSL_STRING) *vfyopts)
+{
+    int rv = 0;
+
+    if (do_x509_req_init(x, vfyopts) > 0)
+        rv = (X509_REQ_verify(x, pkey) > 0);
+    return rv;
 }
 
 /* Get first http URL from a DIST_POINT structure */

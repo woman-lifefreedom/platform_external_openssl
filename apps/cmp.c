@@ -409,11 +409,7 @@ const OPTIONS cmp_options[] = {
     {"engine", OPT_ENGINE, 's',
      "Use crypto engine with given identifier, possibly a hardware device."},
     {OPT_MORE_STR, 0, 0,
-     "Engines may be defined in OpenSSL config file engine section."},
-    {OPT_MORE_STR, 0, 0,
-     "Options like -key specifying keys held in the engine can give key IDs"},
-    {OPT_MORE_STR, 0, 0,
-     "prefixed by 'engine:', e.g. '-key engine:pkcs11:object=mykey;pin-value=1234'"},
+     "Engines may also be defined in OpenSSL config file engine section."},
 #endif
     OPT_PROV_OPTIONS,
 
@@ -531,7 +527,7 @@ static varref cmp_vars[] = { /* must be in same order as enumerated above! */
 
     {&opt_oldcert}, {(char **)&opt_revreason},
 
-    {&opt_server}, {&opt_proxy}, {&opt_no_proxy}, {&opt_path},
+    {&opt_server}, {&opt_path}, {&opt_proxy}, {&opt_no_proxy},
     {(char **)&opt_msg_timeout}, {(char **)&opt_total_timeout},
 
     {&opt_trusted}, {&opt_untrusted}, {&opt_srvcert},
@@ -1072,7 +1068,7 @@ static int transform_opts(void)
         return 0;
     }
 
-#ifdef OPENSSL_NO_ENGINE
+#ifndef OPENSSL_NO_ENGINE
 # define FORMAT_OPTIONS (OPT_FMT_PEMDER | OPT_FMT_PKCS12 | OPT_FMT_ENGINE)
 #else
 # define FORMAT_OPTIONS (OPT_FMT_PEMDER | OPT_FMT_PKCS12)
@@ -2293,7 +2289,9 @@ static int get_opts(int argc, char **argv)
         switch (o) {
         case OPT_EOF:
         case OPT_ERR:
-            goto opt_err;
+ opthelp:
+            BIO_printf(bio_err, "%s: Use -help for summary.\n", prog);
+            return 0;
         case OPT_HELP:
             opt_help(cmp_options);
             return -1;
@@ -2315,11 +2313,11 @@ static int get_opts(int argc, char **argv)
             break;
         case OPT_MSG_TIMEOUT:
             if ((opt_msg_timeout = opt_nat()) < 0)
-                goto opt_err;
+                goto opthelp;
             break;
         case OPT_TOTAL_TIMEOUT:
             if ((opt_total_timeout = opt_nat()) < 0)
-                goto opt_err;
+                goto opthelp;
             break;
         case OPT_TLS_USED:
             opt_tls_used = 1;
@@ -2403,7 +2401,7 @@ static int get_opts(int argc, char **argv)
 
         case OPT_V_CASES:
             if (!opt_verify(o, vpm))
-                goto opt_err;
+                goto opthelp;
             break;
         case OPT_CMD:
             opt_cmd_s = opt_str("cmd");
@@ -2429,7 +2427,7 @@ static int get_opts(int argc, char **argv)
             break;
         case OPT_DAYS:
             if ((opt_days = opt_nat()) < 0)
-                goto opt_err;
+                goto opthelp;
             break;
         case OPT_REQEXTS:
             opt_reqexts = opt_str("reqexts");
@@ -2454,7 +2452,7 @@ static int get_opts(int argc, char **argv)
                     || opt_popo < OSSL_CRMF_POPO_NONE
                     || opt_popo > OSSL_CRMF_POPO_KEYENC) {
                 CMP_err("invalid popo spec. Valid values are -1 .. 2");
-                goto opt_err;
+                goto opthelp;
             }
             break;
         case OPT_CSR:
@@ -2484,7 +2482,7 @@ static int get_opts(int argc, char **argv)
                     || opt_revreason > CRL_REASON_AA_COMPROMISE
                     || opt_revreason == 7) {
                 CMP_err("invalid revreason. Valid values are -1 .. 6, 8 .. 10");
-                goto opt_err;
+                goto opthelp;
             }
             break;
         case OPT_CERTFORM:
@@ -2503,7 +2501,7 @@ static int get_opts(int argc, char **argv)
 #endif
         case OPT_PROV_CASES:
             if (!opt_provider(o))
-                goto opt_err;
+                goto opthelp;
             break;
 
         case OPT_BATCH:
@@ -2535,7 +2533,7 @@ static int get_opts(int argc, char **argv)
             break;
         case OPT_MAX_MSGS:
             if ((opt_max_msgs = opt_nat()) < 0)
-                goto opt_err;
+                goto opthelp;
             break;
         case OPT_SRV_REF:
             opt_srv_ref = opt_str("srv_ref");
@@ -2608,17 +2606,13 @@ static int get_opts(int argc, char **argv)
             break;
         }
     }
+
+    /* No extra args. */
     argc = opt_num_rest();
     argv = opt_rest();
-    if (argc != 0) {
-        CMP_err1("unknown parameter %s", argv[0]);
-        goto opt_err;
-    }
+    if (argc != 0)
+        goto opthelp;
     return 1;
-
- opt_err:
-    CMP_err1("use -help for summary of '%s' options", prog);
-    return 0;
 }
 
 int cmp_main(int argc, char **argv)
@@ -2697,12 +2691,8 @@ int cmp_main(int argc, char **argv)
         goto err;
     ret = 0;
 
-    if (opt_batch) {
-#ifndef OPENSSL_NO_UI_CONSOLE
-        UI_method_set_reader(UI_OpenSSL(), NULL);
-        /* can't change get_ui_method() here as load_key_certs_crls() uses it */
-#endif
-    }
+    if (opt_batch)
+        set_base_ui_method(UI_null());
 
     if (opt_engine != NULL)
         engine = setup_engine_methods(opt_engine, 0 /* not: ENGINE_METHOD_ALL */, 0);

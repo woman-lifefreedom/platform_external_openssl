@@ -219,8 +219,8 @@ function check_asm_flags() {
 
   make crypto/buildinf.h
   #unsorted_flags="$(awk '/^CFLAGS=/ { sub(/^CFLAGS=.*-pthread /, ""); gsub(/-D/, ""); print; }' Makefile)"
-  unsorted_flags=$(perl -we 'use configdata; print join(" ", @{$config{lib_defines}})')
-  unsorted_flags="${unsorted_flags} $(perl -we 'use configdata; print join(" ", @{$unified_info{defines}{libcrypto}})')"
+  unsorted_flags=$(perl -we 'use FindBin 1.51 qw( $RealBin );use lib $RealBin;use configdata; print join(" ", @{$config{lib_defines}})')
+  unsorted_flags="${unsorted_flags} $(perl -we 'use FindBin 1.51 qw( $RealBin );use lib $RealBin;use configdata; print join(" ", @{$unified_info{defines}{libcrypto}})')"
   unsorted_flags="$unsorted_flags $(scan_opensslconf_for_flags "${CRYPTO_CONF_FLAGS[@]}")"
 
   expected_flags="$(echo $unsorted_flags | tr ' ' '\n' | sort | tr '\n' ' ')"

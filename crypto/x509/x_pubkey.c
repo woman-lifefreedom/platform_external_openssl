@@ -32,10 +32,26 @@ struct X509_pubkey_st {
 
     /* extra data for the callback, used by d2i_PUBKEY_ex */
     OSSL_LIB_CTX *libctx;
-    const char *propq;
+    char *propq;
 };
 
 static int x509_pubkey_decode(EVP_PKEY **pk, const X509_PUBKEY *key);
+
+static int x509_pubkey_set0_libctx(X509_PUBKEY *x, OSSL_LIB_CTX *libctx,
+                                   const char *propq)
+{
+    if (x != NULL) {
+        x->libctx = libctx;
+        OPENSSL_free(x->propq);
+        x->propq = NULL;
+        if (propq != NULL) {
+            x->propq = OPENSSL_strdup(propq);
+            if (x->propq == NULL)
+                return 0;
+        }
+    }
+    return 1;
+}
 
 /* Minor tweak to operation: free up EVP_PKEY */
 static int pubkey_cb(int operation, ASN1_VALUE **pval, const ASN1_ITEM *it,
@@ -44,6 +60,7 @@ static int pubkey_cb(int operation, ASN1_VALUE **pval, const ASN1_ITEM *it,
     X509_PUBKEY *pubkey = (X509_PUBKEY *)*pval;
 
     if (operation == ASN1_OP_FREE_POST) {
+        OPENSSL_free(pubkey->propq);
         EVP_PKEY_free(pubkey->pkey);
     } else if (operation == ASN1_OP_D2I_POST) {
         /* Attempt to decode public key and cache in pubkey structure. */
@@ -60,6 +77,11 @@ static int pubkey_cb(int operation, ASN1_VALUE **pval, const ASN1_ITEM *it,
             return 0;
         }
         ERR_pop_to_mark();
+    } else if (operation == ASN1_OP_DUP_POST) {
+        X509_PUBKEY *old = exarg;
+
+        if (!x509_pubkey_set0_libctx(pubkey, old->libctx, old->propq))
+            return 0;
     }
     return 1;
 }
@@ -98,14 +120,12 @@ int X509_PUBKEY_set(X509_PUBKEY **x, EVP_PKEY *pkey)
             goto error;
         }
     } else if (evp_pkey_is_provided(pkey)) {
-        const OSSL_PROVIDER *pkprov = EVP_KEYMGMT_provider(pkey->keymgmt);
-        OSSL_LIB_CTX *libctx = ossl_provider_libctx(pkprov);
         unsigned char *der = NULL;
         size_t derlen = 0;
         OSSL_ENCODER_CTX *ectx =
             OSSL_ENCODER_CTX_new_by_EVP_PKEY(pkey, EVP_PKEY_PUBLIC_KEY,
                                              "DER", "SubjectPublicKeyInfo",
-                                             libctx, NULL);
+                                             NULL);
 
         if (OSSL_ENCODER_to_data(ectx, &der, &derlen)) {
             const unsigned char *pder = der;
@@ -259,8 +279,8 @@ EVP_PKEY *d2i_PUBKEY_ex(EVP_PKEY **a, const unsigned char **pp, long length,
             ERR_raise(ERR_LIB_X509, ERR_R_MALLOC_FAILURE);
             return NULL;
         }
-        xpk2->libctx = libctx;
-        xpk2->propq = propq;
+        if (!x509_pubkey_set0_libctx(xpk2, libctx, propq))
+            goto end;
         pxpk = &xpk2;
     }
     xpk = d2i_X509_PUBKEY(pxpk, &q, length);
@@ -306,12 +326,10 @@ int i2d_PUBKEY(const EVP_PKEY *a, unsigned char **pp)
         }
         X509_PUBKEY_free(xpk);
     } else if (a->keymgmt != NULL) {
-        const OSSL_PROVIDER *pkprov = EVP_KEYMGMT_provider(a->keymgmt);
-        OSSL_LIB_CTX *libctx = ossl_provider_libctx(pkprov);
         OSSL_ENCODER_CTX *ctx =
             OSSL_ENCODER_CTX_new_by_EVP_PKEY(a, EVP_PKEY_PUBLIC_KEY,
                                              "DER", "SubjectPublicKeyInfo",
-                                             libctx, NULL);
+                                             NULL);
         BIO *out = BIO_new(BIO_s_mem());
         BUF_MEM *buf = NULL;
 
@@ -342,7 +360,6 @@ int i2d_PUBKEY(const EVP_PKEY *a, unsigned char **pp)
 /*
  * The following are equivalents but which return RSA and DSA keys
  */
-#ifndef OPENSSL_NO_RSA
 RSA *d2i_RSA_PUBKEY(RSA **a, const unsigned char **pp, long length)
 {
     EVP_PKEY *pkey;
@@ -382,7 +399,6 @@ int i2d_RSA_PUBKEY(const RSA *a, unsigned char **pp)
     EVP_PKEY_free(pktmp);
     return ret;
 }
-#endif
 
 #ifndef OPENSSL_NO_DSA
 DSA *d2i_DSA_PUBKEY(DSA **a, const unsigned char **pp, long length)

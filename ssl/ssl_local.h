@@ -807,6 +807,8 @@ int ssl_hmac_final(SSL_HMAC *ctx, unsigned char *md, size_t *len,
                    size_t max_size);
 size_t ssl_hmac_size(const SSL_HMAC *ctx);
 
+int ssl_get_EC_curve_nid(const EVP_PKEY *pkey);
+
 typedef struct tls_group_info_st {
     char *tlsname;           /* Curve Name as in TLS specs */
     char *realname;          /* Curve Name according to provider */
@@ -1301,9 +1303,7 @@ struct ssl_st {
             int message_type;
             /* used to hold the new cipher we are going to use */
             const SSL_CIPHER *new_cipher;
-# if !defined(OPENSSL_NO_EC) || !defined(OPENSSL_NO_DH)
-            EVP_PKEY *pkey;         /* holds short lived DH/ECDH key */
-# endif
+            EVP_PKEY *pkey;         /* holds short lived key exchange key */
             /* used for certificate requests */
             int cert_req;
             /* Certificate types in certificate request message. */
@@ -1415,11 +1415,9 @@ struct ssl_st {
 # endif                         /* !OPENSSL_NO_EC */
 
         /* For clients: peer temporary key */
-# if !defined(OPENSSL_NO_EC) || !defined(OPENSSL_NO_DH)
-        /* The group_id for the DH/ECDH key */
+        /* The group_id for the key exchange key */
         uint16_t group_id;
         EVP_PKEY *peer_tmp;
-# endif
 
     } s3;
 

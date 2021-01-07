@@ -169,6 +169,11 @@ static int add_params(OSSL_PARAM_BLD *bld, const ST_KAT_PARAM *params,
                 goto err;
             break;
         }
+        case OSSL_PARAM_INTEGER: {
+            if (!OSSL_PARAM_BLD_push_int(bld, p->name, *(int *)p->data))
+                goto err;
+            break;
+        }
         default:
             break;
         }
@@ -182,7 +187,7 @@ static int self_test_kdf(const ST_KAT_KDF *t, OSSL_SELF_TEST *st,
                          OSSL_LIB_CTX *libctx)
 {
     int ret = 0;
-    unsigned char out[64];
+    unsigned char out[128];
     EVP_KDF *kdf = NULL;
     EVP_KDF_CTX *ctx = NULL;
     BN_CTX *bnctx = NULL;
@@ -346,6 +351,7 @@ err:
     return ret;
 }
 
+#if !defined(OPENSSL_NO_DH) || !defined(OPENSSL_NO_EC)
 static int self_test_ka(const ST_KAT_KAS *t,
                         OSSL_SELF_TEST *st, OSSL_LIB_CTX *libctx)
 {
@@ -421,6 +427,7 @@ err:
     OSSL_SELF_TEST_onend(st, ret);
     return ret;
 }
+#endif /* !defined(OPENSSL_NO_DH) || !defined(OPENSSL_NO_EC) */
 
 static int self_test_sign(const ST_KAT_SIGN *t,
                          OSSL_SELF_TEST *st, OSSL_LIB_CTX *libctx)
@@ -655,12 +662,16 @@ static int self_test_drbgs(OSSL_SELF_TEST *st, OSSL_LIB_CTX *libctx)
 
 static int self_test_kas(OSSL_SELF_TEST *st, OSSL_LIB_CTX *libctx)
 {
-    int i, ret = 1;
+    int ret = 1;
+#if !defined(OPENSSL_NO_DH) || !defined(OPENSSL_NO_EC)
+    int i;
 
     for (i = 0; i < (int)OSSL_NELEM(st_kat_kas_tests); ++i) {
         if (!self_test_ka(&st_kat_kas_tests[i], st, libctx))
             ret = 0;
     }
+#endif
+
     return ret;
 }
 

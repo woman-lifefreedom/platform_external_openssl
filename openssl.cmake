@@ -215,7 +215,6 @@ set(crypto_srcs
         crypto/dh/dh_asn1.c
         crypto/dh/dh_backend.c
         crypto/dh/dh_check.c
-        crypto/dh/dh_ctrl.c
         crypto/dh/dh_depr.c
         crypto/dh/dh_err.c
         crypto/dh/dh_gen.c
@@ -261,7 +260,6 @@ set(crypto_srcs
         crypto/ec/ec_asn1.c
         crypto/ec/ec_backend.c
         crypto/ec/ec_check.c
-        crypto/ec/ec_ctrl.c
         crypto/ec/ec_curve.c
         crypto/ec/ec_cvt.c
         crypto/ec/ec_err.c
@@ -330,7 +328,10 @@ set(crypto_srcs
         crypto/evp/c_allc.c
         crypto/evp/c_alld.c
         crypto/evp/cmeth_lib.c
+        crypto/evp/dh_ctrl.c
+        crypto/evp/dh_support.c
         crypto/evp/digest.c
+        crypto/evp/dsa_ctrl.c
         crypto/evp/e_aes.c
         crypto/evp/e_aes_cbc_hmac_sha1.c
         crypto/evp/e_aes_cbc_hmac_sha256.c
@@ -347,6 +348,8 @@ set(crypto_srcs
         crypto/evp/e_rc5.c
         crypto/evp/e_sm4.c
         crypto/evp/e_xcbc_d.c
+        crypto/evp/ec_ctrl.c
+        crypto/evp/ec_support.c
         crypto/evp/encode.c
         crypto/evp/evp_cnf.c
         crypto/evp/evp_enc.c
@@ -391,6 +394,7 @@ set(crypto_srcs
         crypto/evp/signature.c
         crypto/ex_data.c
         crypto/ffc/ffc_backend.c
+        crypto/ffc/ffc_dh.c
         crypto/ffc/ffc_key_generate.c
         crypto/ffc/ffc_key_validate.c
         crypto/ffc/ffc_params.c
@@ -561,6 +565,7 @@ set(crypto_srcs
         crypto/threads_none.c
         crypto/threads_pthread.c
         crypto/threads_win.c
+        crypto/threads_lib.c
         crypto/trace.c
         crypto/ts/ts_err.c
         crypto/txt_db/txt_db.c
@@ -781,7 +786,6 @@ set(provider_srcs
         providers/defltprov.c
         providers/implementations/asymciphers/rsa_enc.c
         providers/implementations/asymciphers/sm2_enc.c
-        providers/implementations/ciphers/cipher_aes_cts_fips.c
         providers/implementations/ciphers/ciphercommon_block.c
         providers/implementations/ciphers/cipher_chacha20.c
         providers/implementations/ciphers/cipher_aes_cbc_hmac_sha1_hw.c
@@ -806,6 +810,7 @@ set(provider_srcs
         providers/implementations/ciphers/cipher_aes_ocb_hw.c
         providers/implementations/ciphers/cipher_des_hw.c
         providers/implementations/ciphers/cipher_null.c
+        providers/implementations/ciphers/cipher_aes_cts.c
         providers/implementations/ciphers/cipher_aes_hw.c
         providers/implementations/ciphers/cipher_rc2_hw.c
         providers/implementations/ciphers/cipher_chacha20_poly1305_hw.c
@@ -849,6 +854,7 @@ set(provider_srcs
         providers/implementations/digests/md4_prov.c
         providers/implementations/encode_decode/decode_der2key.c
         providers/implementations/encode_decode/encode_key2any.c
+        providers/implementations/encode_decode/encode_key2ms.c
         providers/implementations/encode_decode/decode_ms2key.c
         providers/implementations/encode_decode/encode_key2text.c
         providers/implementations/encode_decode/decode_pem2der.c
@@ -888,6 +894,7 @@ set(provider_srcs
         providers/implementations/rands/drbg_ctr.c
         providers/implementations/rands/drbg_hash.c
         providers/implementations/rands/drbg_hmac.c
+        providers/implementations/rands/seed_src.c
         providers/implementations/rands/seeding/rand_unix.c
         providers/implementations/rands/test_rng.c
         providers/implementations/signature/dsa.c

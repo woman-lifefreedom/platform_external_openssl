@@ -47,7 +47,7 @@ const OPTIONS dhparam_options[] = {
     OPT_SECTION("General"),
     {"help", OPT_HELP, '-', "Display this summary"},
     {"check", OPT_CHECK, '-', "Check the DH parameters"},
-#ifndef OPENSSL_NO_DSA
+#if !defined(OPENSSL_NO_DSA) || !defined(OPENSSL_NO_DEPRECATED_3_0)
     {"dsaparam", OPT_DSAPARAM, '-',
      "Read or generate DSA parameters, convert to DH"},
 #endif
@@ -148,11 +148,17 @@ int dhparam_main(int argc, char **argv)
             break;
         }
     }
+
+    /* One optional argument, bitsize to generate. */
     argc = opt_num_rest();
     argv = opt_rest();
+    if (argc == 1) {
+        if (!opt_int(argv[0], &num) || num <= 0)
+            goto opthelp;
+    } else if (argc != 0) {
+        goto opthelp;
+    }
 
-    if (argv[0] != NULL && (!opt_int(argv[0], &num) || num <= 0))
-        goto end;
 
     if (g && !num)
         num = DEFBITS;
@@ -325,7 +331,7 @@ int dhparam_main(int argc, char **argv)
                                              OSSL_KEYMGMT_SELECT_DOMAIN_PARAMETERS,
                                              outformat == FORMAT_ASN1
                                              ? "DER" : "PEM",
-                                             NULL, NULL, NULL);
+                                             NULL, NULL);
 
         if (ectx == NULL || !OSSL_ENCODER_to_bio(ectx, out)) {
             OSSL_ENCODER_CTX_free(ectx);

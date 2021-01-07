@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -429,7 +429,7 @@ int ossl_cipher_generic_stream_update(void *vctx, unsigned char *out,
     }
 
     *outl = inl;
-    if (!ctx->enc) {
+    if (!ctx->enc && ctx->tlsversion > 0) {
         /*
         * Remove any TLS padding. Only used by cipher_aes_cbc_hmac_sha1_hw.c and
         * cipher_aes_cbc_hmac_sha256_hw.c

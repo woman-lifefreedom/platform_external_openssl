@@ -68,6 +68,7 @@ static int apps_startup(void)
         return 0;
 
     (void)setup_ui_method();
+    (void)setup_engine_loader();
 
     /*
      * NOTE: This is an undocumented feature required for testing only.
@@ -89,6 +90,7 @@ static void apps_shutdown(void)
 {
     app_providers_cleanup();
     OSSL_LIB_CTX_free(app_get0_libctx());
+    destroy_engine_loader();
     destroy_ui_method();
 }
 
@@ -345,6 +347,7 @@ int help_main(int argc, char **argv)
         }
     }
 
+    /* One optional argument, the command to get help for. */
     if (opt_num_rest() == 1) {
         new_argv[0] = opt_rest()[0];
         new_argv[1] = "--help";

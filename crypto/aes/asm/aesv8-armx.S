@@ -928,17 +928,17 @@ aes_v8_ctr32_encrypt_blocks:
 #ifndef __ARMEB__
 	rev	r8, r8
 #endif
-	vorr	q1,q0,q0
 	add	r10, r8, #1
-	vorr	q10,q0,q0
-	add	r8, r8, #2
 	vorr	q6,q0,q0
 	rev	r10, r10
-	vmov.32	d3[1],r10
+	vmov.32	d13[1],r10
+	add	r8, r8, #2
+	vorr	q1,q6,q6
 	bls	.Lctr32_tail
 	rev	r12, r8
+	vmov.32	d13[1],r12
 	sub	r2,r2,#3		@ bias
-	vmov.32	d21[1],r12
+	vorr	q10,q6,q6
 	b	.Loop3x_ctr32
 
 .align	4
@@ -965,11 +965,11 @@ aes_v8_ctr32_encrypt_blocks:
 	INST(0x20,0x23,0xb0,0xf3)	@ aese q1,q8
 	INST(0x82,0xa3,0xb0,0xf3)	@ aesmc q5,q1
 	vld1.8	{q2},[r0]!
-	vorr	q0,q6,q6
+	add	r9,r8,#1
 	INST(0x20,0x43,0xf0,0xf3)	@ aese q10,q8
 	INST(0xa4,0x43,0xf0,0xf3)	@ aesmc q10,q10
 	vld1.8	{q3},[r0]!
-	vorr	q1,q6,q6
+	rev	r9,r9
 	INST(0x22,0x83,0xb0,0xf3)	@ aese q4,q9
 	INST(0x88,0x83,0xb0,0xf3)	@ aesmc q4,q4
 	INST(0x22,0xa3,0xb0,0xf3)	@ aese q5,q9
@@ -978,8 +978,6 @@ aes_v8_ctr32_encrypt_blocks:
 	mov	r7,r3
 	INST(0x22,0x43,0xf0,0xf3)	@ aese q10,q9
 	INST(0xa4,0x23,0xf0,0xf3)	@ aesmc q9,q10
-	vorr	q10,q6,q6
-	add	r9,r8,#1
 	INST(0x28,0x83,0xb0,0xf3)	@ aese q4,q12
 	INST(0x88,0x83,0xb0,0xf3)	@ aesmc q4,q4
 	INST(0x28,0xa3,0xb0,0xf3)	@ aese q5,q12
@@ -995,20 +993,22 @@ aes_v8_ctr32_encrypt_blocks:
 	INST(0x2a,0xa3,0xb0,0xf3)	@ aese q5,q13
 	INST(0x8a,0xa3,0xb0,0xf3)	@ aesmc q5,q5
 	veor	q11,q11,q7
-	rev	r9,r9
+	vmov.32	d13[1], r9
 	INST(0x2a,0x23,0xf0,0xf3)	@ aese q9,q13
 	INST(0xa2,0x23,0xf0,0xf3)	@ aesmc q9,q9
-	vmov.32	d1[1], r9
+	vorr	q0,q6,q6
 	rev	r10,r10
 	INST(0x2c,0x83,0xb0,0xf3)	@ aese q4,q14
 	INST(0x88,0x83,0xb0,0xf3)	@ aesmc q4,q4
+	vmov.32	d13[1], r10
+	rev	r12,r8
 	INST(0x2c,0xa3,0xb0,0xf3)	@ aese q5,q14
 	INST(0x8a,0xa3,0xb0,0xf3)	@ aesmc q5,q5
-	vmov.32	d3[1], r10
-	rev	r12,r8
+	vorr	q1,q6,q6
+	vmov.32	d13[1], r12
 	INST(0x2c,0x23,0xf0,0xf3)	@ aese q9,q14
 	INST(0xa2,0x23,0xf0,0xf3)	@ aesmc q9,q9
-	vmov.32	d21[1], r12
+	vorr	q10,q6,q6
 	subs	r2,r2,#3
 	INST(0x2e,0x83,0xb0,0xf3)	@ aese q4,q15
 	INST(0x2e,0xa3,0xb0,0xf3)	@ aese q5,q15
