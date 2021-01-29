@@ -547,6 +547,7 @@ set(crypto_srcs
         crypto/siphash/siphash.c
         crypto/sm2/sm2_err.c
         crypto/sm2/sm2_crypt.c
+        crypto/sm2/sm2_key.c
         crypto/sm2/sm2_sign.c
         crypto/sm3/sm3.c
         crypto/sm3/legacy_sm3.c
@@ -618,9 +619,8 @@ set(crypto_srcs
         crypto/x509/pcy_node.c
         crypto/x509/pcy_tree.c
         crypto/x509/v3_admis.c
-        crypto/x509/v3_akey.c
         crypto/x509/v3_akeya.c
-        crypto/x509/v3_alt.c
+        crypto/x509/v3_akid.c
         crypto/x509/v3_bcons.c
         crypto/x509/v3_bitst.c
         crypto/x509/v3_conf.c
@@ -642,7 +642,8 @@ set(crypto_srcs
         crypto/x509/v3_pmaps.c
         crypto/x509/v3_prn.c
         crypto/x509/v3_purp.c
-        crypto/x509/v3_skey.c
+        crypto/x509/v3_san.c
+        crypto/x509/v3_skid.c
         crypto/x509/v3_sxnet.c
         crypto/x509/v3_tlsf.c
         crypto/x509/v3_utf8.c
