@@ -44,6 +44,8 @@ unsigned long X509_issuer_and_serial_hash(X509 *a)
     if (ctx == NULL)
         goto err;
     f = X509_NAME_oneline(a->cert_info.issuer, NULL, 0);
+    if (f == NULL)
+        goto err;
     if (!EVP_DigestInit_ex(ctx, EVP_md5(), NULL))
         goto err;
     if (!EVP_DigestUpdate(ctx, (unsigned char *)f, strlen(f)))
@@ -531,6 +533,7 @@ int X509_CRL_check_suiteb(X509_CRL *crl, EVP_PKEY *pk, unsigned long flags)
 }
 
 #endif
+
 /*
  * Not strictly speaking an "up_ref" as a STACK doesn't have a reference
  * count but it has the same effect by duping the STACK and upping the ref of
@@ -538,17 +541,19 @@ int X509_CRL_check_suiteb(X509_CRL *crl, EVP_PKEY *pk, unsigned long flags)
  */
 STACK_OF(X509) *X509_chain_up_ref(STACK_OF(X509) *chain)
 {
-    STACK_OF(X509) *ret;
+    STACK_OF(X509) *ret = sk_X509_dup(chain);
     int i;
-    ret = sk_X509_dup(chain);
+
     if (ret == NULL)
         return NULL;
     for (i = 0; i < sk_X509_num(ret); i++) {
         X509 *x = sk_X509_value(ret, i);
+
         if (!X509_up_ref(x))
             goto err;
     }
     return ret;
+
  err:
     while (i-- > 0)
         X509_free(sk_X509_value(ret, i));

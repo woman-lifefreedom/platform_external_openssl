@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2018-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -105,7 +105,7 @@ opthelp:
     if (argc != 1)
         goto opthelp;
 
-    mac = EVP_MAC_fetch(NULL, argv[0], NULL);
+    mac = EVP_MAC_fetch(app_get0_libctx(), argv[0], app_get0_propq());
     if (mac == NULL) {
         BIO_printf(bio_err, "Invalid MAC name %s\n", argv[0]);
         goto opthelp;

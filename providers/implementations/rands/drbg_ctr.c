@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2011-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -13,12 +13,12 @@
 #include <openssl/err.h>
 #include <openssl/rand.h>
 #include <openssl/aes.h>
+#include <openssl/proverr.h>
 #include "e_os.h" /* strcasecmp */
 #include "crypto/modes.h"
 #include "internal/thread_once.h"
 #include "prov/implementations.h"
 #include "prov/provider_ctx.h"
-#include "prov/providercommonerr.h"
 #include "drbg_local.h"
 
 static OSSL_FUNC_rand_newctx_fn drbg_ctr_new_wrapper;
@@ -755,5 +755,7 @@ const OSSL_DISPATCH ossl_drbg_ctr_functions[] = {
     { OSSL_FUNC_RAND_GET_CTX_PARAMS, (void(*)(void))drbg_ctr_get_ctx_params },
     { OSSL_FUNC_RAND_VERIFY_ZEROIZATION,
       (void(*)(void))drbg_ctr_verify_zeroization },
+    { OSSL_FUNC_RAND_GET_SEED, (void(*)(void))ossl_drbg_get_seed },
+    { OSSL_FUNC_RAND_CLEAR_SEED, (void(*)(void))ossl_drbg_clear_seed },
     { 0, NULL }
 };

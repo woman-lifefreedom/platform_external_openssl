@@ -209,7 +209,7 @@ const OPTIONS ca_options[] = {
     {"noemailDN", OPT_NOEMAILDN, '-', "Don't add the EMAIL field to the DN"},
 
     OPT_SECTION("Signing"),
-    {"md", OPT_MD, 's', "md to use; one of md2, md5, sha or sha1"},
+    {"md", OPT_MD, 's', "Digest to use, such as sha256"},
     {"keyfile", OPT_KEYFILE, 's', "The CA private key"},
     {"keyform", OPT_KEYFORM, 'f',
      "Private key file format (ENGINE, other values ignored)"},
@@ -521,6 +521,7 @@ end_of_options:
         goto end;
 
     app_RAND_load_conf(conf, BASE_SECTION);
+    app_RAND_load();
 
     f = NCONF_get_string(conf, section, STRING_MASK);
     if (f == NULL)
@@ -862,6 +863,7 @@ end_of_options:
             if (extensions != NULL) {
                 /* Check syntax of config file section */
                 X509V3_CTX ctx;
+
                 X509V3_set_ctx_test(&ctx);
                 X509V3_set_nconf(&ctx, conf);
                 if (!X509V3_EXT_add_nconf(conf, &ctx, extensions, NULL)) {
@@ -1140,6 +1142,7 @@ end_of_options:
         if (crl_ext != NULL) {
             /* Check syntax of file */
             X509V3_CTX ctx;
+
             X509V3_set_ctx_test(&ctx);
             X509V3_set_nconf(&ctx, conf);
             if (!X509V3_EXT_add_nconf(conf, &ctx, crl_ext, NULL)) {
@@ -1229,6 +1232,7 @@ end_of_options:
 
         if (crl_ext != NULL || crlnumberfile != NULL) {
             X509V3_CTX crlctx;
+
             X509V3_set_ctx(&crlctx, x509, NULL, NULL, crl, 0);
             X509V3_set_nconf(&crlctx, conf);
 
@@ -1696,12 +1700,12 @@ static int do_body(X509 **xret, EVP_PKEY *pkey, X509 *x509,
     if (!i)
         goto end;
 
+    /* Initialize the context structure */
+    X509V3_set_ctx(&ext_ctx, selfsign ? ret : x509,
+                   ret, req, NULL, X509V3_CTX_REPLACE);
+
     /* Lets add the extensions, if there are any */
     if (ext_sect) {
-        /* Initialize the context structure */
-        X509V3_set_ctx(&ext_ctx, selfsign ? ret : x509,
-                       ret, req, NULL, X509V3_CTX_REPLACE);
-
         if (extfile_conf != NULL) {
             if (verbose)
                 BIO_printf(bio_err, "Extra configuration file found\n");
@@ -2268,62 +2272,51 @@ static int get_certificate_status(const char *serial, CA_DB *db)
 
 static int do_updatedb(CA_DB *db)
 {
-    ASN1_UTCTIME *a_tm = NULL;
+    ASN1_TIME *a_tm = NULL;
     int i, cnt = 0;
-    int db_y2k, a_y2k;          /* flags = 1 if y >= 2000 */
-    char **rrow, *a_tm_s;
+    char **rrow;
 
-    a_tm = ASN1_UTCTIME_new();
+    a_tm = ASN1_TIME_new();
     if (a_tm == NULL)
         return -1;
 
-    /* get actual time and make a string */
+    /* get actual time */
     if (X509_gmtime_adj(a_tm, 0) == NULL) {
-        ASN1_UTCTIME_free(a_tm);
+        ASN1_TIME_free(a_tm);
         return -1;
     }
-    a_tm_s = app_malloc(a_tm->length + 1, "time string");
-
-    memcpy(a_tm_s, a_tm->data, a_tm->length);
-    a_tm_s[a_tm->length] = '\0';
-
-    if (strncmp(a_tm_s, "49", 2) <= 0)
-        a_y2k = 1;
-    else
-        a_y2k = 0;
 
     for (i = 0; i < sk_OPENSSL_PSTRING_num(db->db->data); i++) {
         rrow = sk_OPENSSL_PSTRING_value(db->db->data, i);
 
         if (rrow[DB_type][0] == DB_TYPE_VAL) {
             /* ignore entries that are not valid */
-            if (strncmp(rrow[DB_exp_date], "49", 2) <= 0)
-                db_y2k = 1;
-            else
-                db_y2k = 0;
+            ASN1_TIME *exp_date = NULL;
 
-            if (db_y2k == a_y2k) {
-                /* all on the same y2k side */
-                if (strcmp(rrow[DB_exp_date], a_tm_s) <= 0) {
-                    rrow[DB_type][0] = DB_TYPE_EXP;
-                    rrow[DB_type][1] = '\0';
-                    cnt++;
+            exp_date = ASN1_TIME_new();
+            if (exp_date == NULL) {
+                ASN1_TIME_free(a_tm);
+                return -1;
+            }
 
-                    BIO_printf(bio_err, "%s=Expired\n", rrow[DB_serial]);
-                }
-            } else if (db_y2k < a_y2k) {
+            if (!ASN1_TIME_set_string(exp_date, rrow[DB_exp_date])) {
+                ASN1_TIME_free(a_tm);
+                ASN1_TIME_free(exp_date);
+                return -1;
+            }
+
+            if (ASN1_TIME_compare(exp_date, a_tm) <= 0) {
                 rrow[DB_type][0] = DB_TYPE_EXP;
                 rrow[DB_type][1] = '\0';
                 cnt++;
 
                 BIO_printf(bio_err, "%s=Expired\n", rrow[DB_serial]);
             }
-
+            ASN1_TIME_free(exp_date);
         }
     }
 
-    ASN1_UTCTIME_free(a_tm);
-    OPENSSL_free(a_tm_s);
+    ASN1_TIME_free(a_tm);
     return cnt;
 }
 

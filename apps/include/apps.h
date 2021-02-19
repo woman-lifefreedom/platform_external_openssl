@@ -47,6 +47,7 @@
 
 void app_RAND_load_conf(CONF *c, const char *section);
 void app_RAND_write(void);
+int app_RAND_load(void);
 
 extern char *default_config_file; /* may be "" */
 extern BIO *bio_in;
@@ -323,6 +324,7 @@ int app_provider_load(OSSL_LIB_CTX *libctx, const char *provider_name);
 void app_providers_cleanup(void);
 
 OSSL_LIB_CTX *app_get0_libctx(void);
+int app_set_propq(const char *arg);
 const char *app_get0_propq(void);
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2020-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -22,6 +22,7 @@
 #include <openssl/pem.h>         /* PEM_BUFSIZE and public PEM functions */
 #include <openssl/pkcs12.h>
 #include <openssl/x509.h>
+#include <openssl/proverr.h>
 #include "internal/cryptlib.h"   /* ossl_assert() */
 #include "internal/asn1.h"
 #include "crypto/dh.h"
@@ -31,7 +32,6 @@
 #include "crypto/rsa.h"
 #include "prov/bio.h"
 #include "prov/implementations.h"
-#include "prov/providercommonerr.h"
 #include "endecoder_local.h"
 
 #define SET_ERR_MARK() ERR_set_mark()
@@ -87,7 +87,7 @@ static int der_from_p8(unsigned char **new_der, long *new_der_len,
         size_t plen = 0;
 
         if (!pw_cb(pbuf, sizeof(pbuf), &plen, NULL, pw_cbarg)) {
-            ERR_raise(ERR_LIB_PROV, PROV_R_READ_KEY);
+            ERR_raise(ERR_LIB_PROV, PROV_R_UNABLE_TO_GET_PASSPHRASE);
         } else {
             const X509_ALGOR *alg = NULL;
             const ASN1_OCTET_STRING *oct = NULL;
@@ -504,6 +504,16 @@ static void ecx_key_adjust(void *key, struct der2key_ctx_st *ctx)
 # define x448_d2i_key_params            NULL
 # define x448_free                      (free_key_fn *)ecx_key_free
 # define x448_adjust                    ecx_key_adjust
+
+# ifndef OPENSSL_NO_SM2
+#  define sm2_evp_type                  EVP_PKEY_SM2
+#  define sm2_evp_extract               (extract_key_fn *)EVP_PKEY_get1_EC_KEY
+#  define sm2_d2i_private_key           (d2i_of_void *)d2i_ECPrivateKey
+#  define sm2_d2i_public_key            NULL
+#  define sm2_d2i_key_params            (d2i_of_void *)d2i_ECParameters
+#  define sm2_free                      (free_key_fn *)EC_KEY_free
+#  define sm2_adjust                    ec_adjust
+# endif
 #endif
 
 /* ---------------------------------------------------------------------- */
@@ -762,6 +772,10 @@ MAKE_DECODER("ED25519", ed25519, ecx, PKCS8);
 MAKE_DECODER("ED25519", ed25519, ecx, SubjectPublicKeyInfo);
 MAKE_DECODER("ED448", ed448, ecx, PKCS8);
 MAKE_DECODER("ED448", ed448, ecx, SubjectPublicKeyInfo);
+# ifndef OPENSSL_NO_SM2
+MAKE_DECODER("SM2", sm2, ec, PKCS8);
+MAKE_DECODER("SM2", sm2, ec, SubjectPublicKeyInfo);
+# endif
 #endif
 MAKE_DECODER("RSA", rsa, rsa, PKCS8);
 MAKE_DECODER("RSA", rsa, rsa, SubjectPublicKeyInfo);
