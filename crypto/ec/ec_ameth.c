@@ -482,7 +482,10 @@ static int ec_pkey_ctrl(EVP_PKEY *pkey, int op, long arg1, void *arg2)
         return 1;
 
     case ASN1_PKEY_CTRL_SET1_TLS_ENCPT:
-        return EC_KEY_oct2key(EVP_PKEY_get0_EC_KEY(pkey), arg2, arg1, NULL);
+        /* We should only be here if we have a legacy key */
+        if (!ossl_assert(evp_pkey_is_legacy(pkey)))
+            return 0;
+        return EC_KEY_oct2key(evp_pkey_get0_EC_KEY_int(pkey), arg2, arg1, NULL);
 
     case ASN1_PKEY_CTRL_GET1_TLS_ENCPT:
         return EC_KEY_key2buf(EVP_PKEY_get0_EC_KEY(pkey),
@@ -584,7 +587,7 @@ int ec_pkey_export_to(const EVP_PKEY *from, void *to_keydata,
     BN_CTX_start(bnctx);
 
     /* export the domain parameters */
-    if (!ec_group_todata(ecg, tmpl, NULL, libctx, propq, bnctx, &gen_buf))
+    if (!ossl_ec_group_todata(ecg, tmpl, NULL, libctx, propq, bnctx, &gen_buf))
         goto err;
     selection |= OSSL_KEYMGMT_SELECT_DOMAIN_PARAMETERS;
 
@@ -695,9 +698,9 @@ static int ec_pkey_import_from(const OSSL_PARAM params[], void *vpctx)
         return 0;
     }
 
-    if (!ec_group_fromdata(ec, params)
-        || !ec_key_otherparams_fromdata(ec, params)
-        || !ec_key_fromdata(ec, params, 1)
+    if (!ossl_ec_group_fromdata(ec, params)
+        || !ossl_ec_key_otherparams_fromdata(ec, params)
+        || !ossl_ec_key_fromdata(ec, params, 1)
         || !EVP_PKEY_assign_EC_KEY(pkey, ec)) {
         EC_KEY_free(ec);
         return 0;

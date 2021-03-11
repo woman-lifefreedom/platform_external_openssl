@@ -91,6 +91,7 @@ set(crypto_srcs
         crypto/bio/bf_nbio.c
         crypto/bio/bf_null.c
         crypto/bio/bf_prefix.c
+        crypto/bio/bf_readbuff.c
         crypto/bio/bio_cb.c
         crypto/bio/bio_err.c
         crypto/bio/bio_lib.c
@@ -105,6 +106,7 @@ set(crypto_srcs
         crypto/bio/bss_mem.c
         crypto/bio/bss_null.c
         crypto/bio/bss_sock.c
+        crypto/bio/core_bio.c
         crypto/bn/bn_add.c
         crypto/bn/bn_asm.c
         crypto/bn/bn_blind.c
@@ -328,6 +330,7 @@ set(crypto_srcs
         crypto/evp/c_allc.c
         crypto/evp/c_alld.c
         crypto/evp/cmeth_lib.c
+        crypto/evp/ctrl_params_translate.c
         crypto/evp/dh_ctrl.c
         crypto/evp/dh_support.c
         crypto/evp/digest.c
@@ -535,7 +538,6 @@ set(crypto_srcs
         crypto/rsa/rsa_sign.c
         crypto/rsa/rsa_sp800_56b_check.c
         crypto/rsa/rsa_sp800_56b_gen.c
-        crypto/rsa/rsa_ssl.c
         crypto/rsa/rsa_x931.c
         crypto/rsa/rsa_x931g.c
         crypto/self_test_core.c
@@ -854,11 +856,12 @@ set(provider_srcs
         providers/implementations/digests/sha3_prov.c
         providers/implementations/digests/md4_prov.c
         providers/implementations/encode_decode/decode_der2key.c
-        providers/implementations/encode_decode/encode_key2any.c
-        providers/implementations/encode_decode/encode_key2ms.c
         providers/implementations/encode_decode/decode_ms2key.c
-        providers/implementations/encode_decode/encode_key2text.c
         providers/implementations/encode_decode/decode_pem2der.c
+        providers/implementations/encode_decode/encode_key2any.c
+        providers/implementations/encode_decode/encode_key2blob.c
+        providers/implementations/encode_decode/encode_key2ms.c
+        providers/implementations/encode_decode/encode_key2text.c
         providers/implementations/encode_decode/endecoder_common.c
         providers/implementations/exchange/ecx_exch.c
         providers/implementations/exchange/ecdh_exch.c

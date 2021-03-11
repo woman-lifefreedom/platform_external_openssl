@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2006-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -183,7 +183,7 @@ int EVP_PKEY_encrypt(EVP_PKEY_CTX *ctx,
     }
 
     if (ctx->operation != EVP_PKEY_OP_ENCRYPT) {
-        ERR_raise(ERR_LIB_EVP, EVP_R_OPERATON_NOT_INITIALIZED);
+        ERR_raise(ERR_LIB_EVP, EVP_R_OPERATION_NOT_INITIALIZED);
         return -1;
     }
 
@@ -220,7 +220,7 @@ int EVP_PKEY_decrypt(EVP_PKEY_CTX *ctx,
     }
 
     if (ctx->operation != EVP_PKEY_OP_DECRYPT) {
-        ERR_raise(ERR_LIB_EVP, EVP_R_OPERATON_NOT_INITIALIZED);
+        ERR_raise(ERR_LIB_EVP, EVP_R_OPERATION_NOT_INITIALIZED);
         return -1;
     }
 
@@ -434,12 +434,14 @@ void EVP_ASYM_CIPHER_do_all_provided(OSSL_LIB_CTX *libctx,
 }
 
 
-void EVP_ASYM_CIPHER_names_do_all(const EVP_ASYM_CIPHER *cipher,
-                                  void (*fn)(const char *name, void *data),
-                                  void *data)
+int EVP_ASYM_CIPHER_names_do_all(const EVP_ASYM_CIPHER *cipher,
+                                 void (*fn)(const char *name, void *data),
+                                 void *data)
 {
     if (cipher->prov != NULL)
-        evp_names_do_all(cipher->prov, cipher->name_id, fn, data);
+        return evp_names_do_all(cipher->prov, cipher->name_id, fn, data);
+
+    return 1;
 }
 
 const OSSL_PARAM *EVP_ASYM_CIPHER_gettable_ctx_params(const EVP_ASYM_CIPHER *cip)
@@ -450,7 +452,7 @@ const OSSL_PARAM *EVP_ASYM_CIPHER_gettable_ctx_params(const EVP_ASYM_CIPHER *cip
         return NULL;
 
     provctx = ossl_provider_ctx(EVP_ASYM_CIPHER_provider(cip));
-    return cip->gettable_ctx_params(provctx);
+    return cip->gettable_ctx_params(NULL, provctx);
 }
 
 const OSSL_PARAM *EVP_ASYM_CIPHER_settable_ctx_params(const EVP_ASYM_CIPHER *cip)
@@ -461,5 +463,5 @@ const OSSL_PARAM *EVP_ASYM_CIPHER_settable_ctx_params(const EVP_ASYM_CIPHER *cip
         return NULL;
 
     provctx = ossl_provider_ctx(EVP_ASYM_CIPHER_provider(cip));
-    return cip->settable_ctx_params(provctx);
+    return cip->settable_ctx_params(NULL, provctx);
 }

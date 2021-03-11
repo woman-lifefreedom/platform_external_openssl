@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2006-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -172,7 +172,7 @@ static int rsa_cms_encrypt(CMS_RecipientInfo *ri)
     return rv;
 }
 
-int cms_rsa_envelope(CMS_RecipientInfo *ri, int decrypt)
+int ossl_cms_rsa_envelope(CMS_RecipientInfo *ri, int decrypt)
 {
     assert(decrypt == 0 || decrypt == 1);
 
@@ -238,7 +238,7 @@ static int rsa_cms_verify(CMS_SignerInfo *si)
     return 0;
 }
 
-int cms_rsa_sign(CMS_SignerInfo *si, int verify)
+int ossl_cms_rsa_sign(CMS_SignerInfo *si, int verify)
 {
     assert(verify == 0 || verify == 1);
 

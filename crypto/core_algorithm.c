@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -65,6 +65,7 @@ static int algorithm_do_this(OSSL_PROVIDER *provider, void *cbdata)
                 data->fn(provider, thismap, no_store, data->data);
             }
         }
+        ossl_provider_unquery_operation(provider, cur_operation, map);
 
         /* Do we fulfill post-conditions? */
         if (data->post == NULL) {
