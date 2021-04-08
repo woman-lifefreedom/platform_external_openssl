@@ -193,6 +193,7 @@ set(crypto_srcs
         crypto/ct/ct_vfy.c
         crypto/ct/ct_x509v3.c
         crypto/ctype.c
+        crypto/cpuid.c
         crypto/cversion.c
         crypto/des/cbc_cksm.c
         crypto/des/cbc_enc.c
@@ -856,12 +857,13 @@ set(provider_srcs
         providers/implementations/digests/sha3_prov.c
         providers/implementations/digests/md4_prov.c
         providers/implementations/encode_decode/decode_der2key.c
-        providers/implementations/encode_decode/decode_ms2key.c
-        providers/implementations/encode_decode/decode_pem2der.c
         providers/implementations/encode_decode/encode_key2any.c
         providers/implementations/encode_decode/encode_key2blob.c
         providers/implementations/encode_decode/encode_key2ms.c
         providers/implementations/encode_decode/encode_key2text.c
+        providers/implementations/encode_decode/decode_msblob2key.c
+        providers/implementations/encode_decode/decode_pem2der.c
+        providers/implementations/encode_decode/decode_pvk2key.c
         providers/implementations/encode_decode/endecoder_common.c
         providers/implementations/exchange/ecx_exch.c
         providers/implementations/exchange/ecdh_exch.c

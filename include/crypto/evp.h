@@ -193,6 +193,7 @@ const EVP_PKEY_METHOD *ossl_rsa_pss_pkey_method(void);
 struct evp_mac_st {
     OSSL_PROVIDER *prov;
     int name_id;
+    const char *description;
 
     CRYPTO_REF_COUNT refcnt;
     CRYPTO_RWLOCK *lock;
@@ -214,6 +215,7 @@ struct evp_mac_st {
 struct evp_kdf_st {
     OSSL_PROVIDER *prov;
     int name_id;
+    const char *description;
     CRYPTO_REF_COUNT refcnt;
     CRYPTO_RWLOCK *lock;
 
@@ -251,6 +253,7 @@ struct evp_md_st {
     /* New structure members */
     /* Above comment to be removed when legacy has gone */
     int name_id;
+    const char *description;
     OSSL_PROVIDER *prov;
     CRYPTO_REF_COUNT refcnt;
     CRYPTO_RWLOCK *lock;
@@ -303,6 +306,7 @@ struct evp_cipher_st {
     /* New structure members */
     /* Above comment to be removed when legacy has gone */
     int name_id;
+    const char *description;
     OSSL_PROVIDER *prov;
     CRYPTO_REF_COUNT refcnt;
     CRYPTO_RWLOCK *lock;
@@ -727,6 +731,8 @@ void *evp_pkey_export_to_provider(EVP_PKEY *pk, OSSL_LIB_CTX *libctx,
 int evp_pkey_copy_downgraded(EVP_PKEY **dest, const EVP_PKEY *src);
 void *evp_pkey_get_legacy(EVP_PKEY *pk);
 void evp_pkey_free_legacy(EVP_PKEY *x);
+EVP_PKEY *evp_pkcs82pkey_legacy(const PKCS8_PRIV_KEY_INFO *p8inf,
+                                OSSL_LIB_CTX *libctx, const char *propq);
 #endif
 
 /*
@@ -776,7 +782,8 @@ int evp_keymgmt_get_params(const EVP_KEYMGMT *keymgmt,
                            void *keydata, OSSL_PARAM params[]);
 int evp_keymgmt_set_params(const EVP_KEYMGMT *keymgmt,
                            void *keydata, const OSSL_PARAM params[]);
-void *evp_keymgmt_gen_init(const EVP_KEYMGMT *keymgmt, int selection);
+void *evp_keymgmt_gen_init(const EVP_KEYMGMT *keymgmt, int selection,
+                           const OSSL_PARAM params[]);
 int evp_keymgmt_gen_set_template(const EVP_KEYMGMT *keymgmt, void *genctx,
                                  void *template);
 int evp_keymgmt_gen_set_params(const EVP_KEYMGMT *keymgmt, void *genctx,
@@ -827,10 +834,11 @@ const EVP_CIPHER *evp_get_cipherbyname_ex(OSSL_LIB_CTX *libctx,
 const EVP_MD *evp_get_digestbyname_ex(OSSL_LIB_CTX *libctx,
                                       const char *name);
 
-int pkcs5_pbkdf2_hmac_ex(const char *pass, int passlen,
-                         const unsigned char *salt, int saltlen, int iter,
-                         const EVP_MD *digest, int keylen, unsigned char *out,
-                         OSSL_LIB_CTX *libctx, const char *propq);
+int ossl_pkcs5_pbkdf2_hmac_ex(const char *pass, int passlen,
+                              const unsigned char *salt, int saltlen, int iter,
+                              const EVP_MD *digest, int keylen,
+                              unsigned char *out,
+                              OSSL_LIB_CTX *libctx, const char *propq);
 
 # ifndef FIPS_MODULE
 /*
@@ -860,15 +868,11 @@ int evp_pkey_ctx_get1_id_len_prov(EVP_PKEY_CTX *ctx, size_t *id_len);
 int evp_pkey_ctx_use_cached_data(EVP_PKEY_CTX *ctx);
 # endif /* !defined(FIPS_MODULE) */
 
-void evp_method_store_flush(OSSL_LIB_CTX *libctx);
+int evp_method_store_flush(OSSL_LIB_CTX *libctx);
 int evp_set_default_properties_int(OSSL_LIB_CTX *libctx, const char *propq,
                                    int loadconfig);
 
 void evp_md_ctx_clear_digest(EVP_MD_CTX *ctx, int force);
-
-EVP_PKEY *evp_privatekey_from_binary(int keytype, EVP_PKEY **a,
-                                     const unsigned char **pp, long length,
-                                     OSSL_LIB_CTX *libctx, const char *propq);
 
 /* Three possible states: */
 # define EVP_PKEY_STATE_UNKNOWN         0

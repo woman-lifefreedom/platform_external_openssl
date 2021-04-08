@@ -241,14 +241,10 @@ int ocsp_main(int argc, char **argv)
     unsigned long sign_flags = 0, verify_flags = 0, rflags = 0;
     OPTION_CHOICE o;
 
-    reqnames = sk_OPENSSL_STRING_new_null();
-    if (reqnames == NULL)
+    if ((reqnames = sk_OPENSSL_STRING_new_null()) == NULL
+            || (ids = sk_OCSP_CERTID_new_null()) == NULL
+            || (vpm = X509_VERIFY_PARAM_new()) == NULL)
         goto end;
-    ids = sk_OCSP_CERTID_new_null();
-    if (ids == NULL)
-        goto end;
-    if ((vpm = X509_VERIFY_PARAM_new()) == NULL)
-        return 1;
 
     prog = opt_init(argc, argv, ocsp_options);
     while ((o = opt_next()) != OPT_EOF) {
@@ -473,7 +469,8 @@ int ocsp_main(int argc, char **argv)
         case OPT_RSIGOPT:
             if (rsign_sigopts == NULL)
                 rsign_sigopts = sk_OPENSSL_STRING_new_null();
-            if (rsign_sigopts == NULL || !sk_OPENSSL_STRING_push(rsign_sigopts, opt_arg()))
+            if (rsign_sigopts == NULL
+                || !sk_OPENSSL_STRING_push(rsign_sigopts, opt_arg()))
                 goto end;
             break;
         case OPT_HEADER:
@@ -574,10 +571,10 @@ int ocsp_main(int argc, char **argv)
             BIO_printf(bio_err, "Error loading responder certificate\n");
             goto end;
         }
-        if (!load_certs(rca_filename, &rca_cert, NULL, "CA certificates"))
+        if (!load_certs(rca_filename, 0, &rca_cert, NULL, "CA certificates"))
             goto end;
         if (rcertfile != NULL) {
-            if (!load_certs(rcertfile, &rother, NULL,
+            if (!load_certs(rcertfile, 0, &rother, NULL,
                             "responder other certificates"))
                 goto end;
         }
@@ -671,7 +668,7 @@ redo_accept:
             goto end;
         }
         if (sign_certfile != NULL) {
-            if (!load_certs(sign_certfile, &sign_other, NULL,
+            if (!load_certs(sign_certfile, 0, &sign_other, NULL,
                             "signer certificates"))
                 goto end;
         }
@@ -680,8 +677,8 @@ redo_accept:
         if (key == NULL)
             goto end;
 
-        if (!OCSP_request_sign
-            (req, signer, key, NULL, sign_other, sign_flags)) {
+        if (!OCSP_request_sign(req, signer, key, NULL,
+                               sign_other, sign_flags)) {
             BIO_printf(bio_err, "Error signing OCSP request\n");
             goto end;
         }
@@ -700,8 +697,8 @@ redo_accept:
 
     if (rdb != NULL) {
         make_ocsp_response(bio_err, &resp, req, rdb, rca_cert, rsigner, rkey,
-                           rsign_md, rsign_sigopts, rother, rflags, nmin, ndays, badsig,
-                           resp_certid_md);
+                           rsign_md, rsign_sigopts, rother, rflags, nmin, ndays,
+                           badsig, resp_certid_md);
         if (cbio != NULL)
             send_ocsp_response(cbio, resp);
     } else if (host != NULL) {
@@ -780,7 +777,7 @@ redo_accept:
     if (vpmtouched)
         X509_STORE_set1_param(store, vpm);
     if (verify_certfile != NULL) {
-        if (!load_certs(verify_certfile, &verify_other, NULL,
+        if (!load_certs(verify_certfile, 0, &verify_other, NULL,
                         "validator certificates"))
             goto end;
     }
@@ -1206,7 +1203,6 @@ OCSP_RESPONSE *process_responder(OCSP_REQUEST *req,
             BIO_printf(bio_err, "Error creating SSL context.\n");
             goto end;
         }
-        SSL_CTX_set_mode(ctx, SSL_MODE_AUTO_RETRY);
     }
 
     resp = (OCSP_RESPONSE *)

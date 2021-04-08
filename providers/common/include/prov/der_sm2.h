@@ -28,7 +28,7 @@ extern const unsigned char ossl_der_oid_curveSM2[DER_OID_SZ_curveSM2];
 
 
 /* Subject Public Key Info */
-int DER_w_algorithmIdentifier_SM2(WPACKET *pkt, int cont, EC_KEY *ec);
+int ossl_DER_w_algorithmIdentifier_SM2(WPACKET *pkt, int cont, EC_KEY *ec);
 /* Signature */
-int DER_w_algorithmIdentifier_SM2_with_MD(WPACKET *pkt, int cont,
-                                          EC_KEY *ec, int mdnid);
+int ossl_DER_w_algorithmIdentifier_SM2_with_MD(WPACKET *pkt, int cont,
+                                               EC_KEY *ec, int mdnid);

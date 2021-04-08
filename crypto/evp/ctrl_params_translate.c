@@ -149,7 +149,7 @@ enum state {
     PKEY,
     PRE_CTRL_TO_PARAMS, POST_CTRL_TO_PARAMS, CLEANUP_CTRL_TO_PARAMS,
     PRE_CTRL_STR_TO_PARAMS, POST_CTRL_STR_TO_PARAMS, CLEANUP_CTRL_STR_TO_PARAMS,
-    PRE_PARAMS_TO_CTRL, POST_PARAMS_TO_CTRL, CLEANUP_PARAMS_TO_CTRL,
+    PRE_PARAMS_TO_CTRL, POST_PARAMS_TO_CTRL, CLEANUP_PARAMS_TO_CTRL
 };
 enum action {
     NONE = 0, GET = 1, SET = 2
@@ -1344,7 +1344,7 @@ static int fix_rsa_pss_saltlen(enum state state,
                 break;
         }
         if (i == OSSL_NELEM(str_value_map)) {
-            BIO_snprintf(ctx->name_buf, 5, "%d", ctx->p1);
+            BIO_snprintf(ctx->name_buf, sizeof(ctx->name_buf), "%d", ctx->p1);
         } else {
             strcpy(ctx->name_buf, str_value_map[i].ptr);
         }
@@ -1432,34 +1432,6 @@ static int fix_hkdf_mode(enum state state,
     return 1;
 }
 
-static int hack_pkcs7_cms(enum state state,
-                          const struct translation_st *translation,
-                          struct translation_ctx_st *ctx)
-{
-    int ret = 1;
-
-    /* Make sure that this has no further effect */
-    ctx->action_type = 0;
-
-    switch (state) {
-    case PRE_CTRL_TO_PARAMS:
-        /* TODO (3.0) Temporary hack, this should probe */
-        if (EVP_PKEY_is_a(EVP_PKEY_CTX_get0_pkey(ctx->pctx), "RSASSA-PSS")) {
-            ERR_raise(ERR_LIB_EVP,
-                      EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
-            ret = -2;
-        }
-        break;
-    case POST_CTRL_TO_PARAMS:
-        break;
-    default:
-        ERR_raise(ERR_LIB_EVP, EVP_R_COMMAND_NOT_SUPPORTED);
-        ret = -2;
-        break;
-    }
-    return ret;
-}
-
 /*-
  * Payload getters
  * ===============
@@ -1512,8 +1484,14 @@ static int get_payload_group_name(enum state state,
         return 0;
     }
 
-    if (ctx->p2 != NULL)
-        ctx->p1 = strlen(ctx->p2);
+    /*
+     * Quietly ignoring unknown groups matches the behaviour on the provider
+     * side.
+     */
+    if (ctx->p2 == NULL)
+        return 1;
+
+    ctx->p1 = strlen(ctx->p2);
     return default_fixup_args(state, translation, ctx);
 }
 
@@ -2115,16 +2093,6 @@ static const struct translation_st evp_pkey_ctx_translations[] = {
       EVP_PKEY_CTRL_RSA_KEYGEN_PRIMES, "rsa_keygen_primes", NULL,
       OSSL_PKEY_PARAM_RSA_PRIMES, OSSL_PARAM_UNSIGNED_INTEGER, NULL },
 
-    /* PKCS#7 and CMS hacks */
-    { SET, -1, -1, EVP_PKEY_OP_ENCRYPT,
-      EVP_PKEY_CTRL_PKCS7_ENCRYPT, NULL, NULL, NULL, 0, hack_pkcs7_cms },
-    { SET, -1, -1, EVP_PKEY_OP_DECRYPT,
-      EVP_PKEY_CTRL_PKCS7_DECRYPT, NULL, NULL, NULL, 0, hack_pkcs7_cms },
-    { SET, -1, -1, EVP_PKEY_OP_ENCRYPT,
-      EVP_PKEY_CTRL_CMS_ENCRYPT, NULL, NULL, NULL, 0, hack_pkcs7_cms },
-    { SET, -1, -1, EVP_PKEY_OP_DECRYPT,
-      EVP_PKEY_CTRL_CMS_DECRYPT, NULL, NULL, NULL, 0, hack_pkcs7_cms },
-
     /*-
      * TLS1-PRF
      * ========
@@ -2182,7 +2150,7 @@ static const struct translation_st evp_pkey_ctx_translations[] = {
       EVP_PKEY_CTRL_SCRYPT_MAXMEM_BYTES, "maxmem_bytes", NULL,
       OSSL_KDF_PARAM_SCRYPT_MAXMEM, OSSL_PARAM_UNSIGNED_INTEGER, NULL },
 
-    { SET, -1, -1, EVP_PKEY_OP_KEYGEN,
+    { SET, -1, -1, EVP_PKEY_OP_KEYGEN | EVP_PKEY_OP_TYPE_CRYPT,
       EVP_PKEY_CTRL_CIPHER, NULL, NULL,
       OSSL_PKEY_PARAM_CIPHER, OSSL_PARAM_UTF8_STRING, fix_cipher },
     { SET, -1, -1, EVP_PKEY_OP_KEYGEN,

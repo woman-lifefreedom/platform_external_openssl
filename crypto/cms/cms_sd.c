@@ -372,7 +372,7 @@ CMS_SignerInfo *CMS_add1_signer(CMS_ContentInfo *cms,
             ESS_SIGNING_CERT_V2 *sc2 = NULL;
             int add_sc;
 
-            if (md == EVP_sha1() || md == NULL) {
+            if (md == NULL || EVP_MD_is_a(md, SN_sha1)) {
                 if ((sc = ossl_ess_signing_cert_new_init(signer,
                                                          NULL, 1)) == NULL)
                     goto err;
@@ -419,7 +419,7 @@ CMS_SignerInfo *CMS_add1_signer(CMS_ContentInfo *cms,
         } else if (EVP_DigestSignInit_ex(si->mctx, &si->pctx, EVP_MD_name(md),
                                          ossl_cms_ctx_get0_libctx(ctx),
                                          ossl_cms_ctx_get0_propq(ctx),
-                                         pk) <= 0) {
+                                         pk, NULL) <= 0) {
             goto err;
         }
     }
@@ -734,7 +734,7 @@ int CMS_SignerInfo_sign(CMS_SignerInfo *si)
             goto err;
     }
 
-    if (!CMS_si_check_attributes(si))
+    if (!ossl_cms_si_check_attributes(si))
         goto err;
 
     if (si->pctx)
@@ -743,28 +743,11 @@ int CMS_SignerInfo_sign(CMS_SignerInfo *si)
         EVP_MD_CTX_reset(mctx);
         if (EVP_DigestSignInit_ex(mctx, &pctx, md_name,
                                   ossl_cms_ctx_get0_libctx(ctx),
-                                  ossl_cms_ctx_get0_propq(ctx), si->pkey) <= 0)
+                                  ossl_cms_ctx_get0_propq(ctx), si->pkey,
+                                  NULL) <= 0)
             goto err;
         si->pctx = pctx;
     }
-
-    /*
-     * TODO(3.0): This causes problems when providers are in use, so disabled
-     * for now. Can we get rid of this completely? AFAICT this ctrl has been
-     * present since CMS was first put in - but has never been used to do
-     * anything. All internal implementations just return 1 and ignore this ctrl
-     * and have always done so by the looks of things. To fix this we could
-     * convert this ctrl into a param, which would require us to send all the
-     * signer info data as a set of params...but that is non-trivial and since
-     * this isn't used by anything it may be better just to remove it.
-     */
-#if 0
-    if (EVP_PKEY_CTX_ctrl(pctx, -1, EVP_PKEY_OP_SIGN,
-                          EVP_PKEY_CTRL_CMS_SIGN, 0, si) <= 0) {
-        ERR_raise(ERR_LIB_CMS, CMS_R_CTRL_ERROR);
-        goto err;
-    }
-#endif
 
     alen = ASN1_item_i2d((ASN1_VALUE *)si->signedAttrs, &abuf,
                          ASN1_ITEM_rptr(CMS_Attributes_Sign));
@@ -780,24 +763,6 @@ int CMS_SignerInfo_sign(CMS_SignerInfo *si)
         goto err;
     if (EVP_DigestSignFinal(mctx, abuf, &siglen) <= 0)
         goto err;
-
-    /*
-     * TODO(3.0): This causes problems when providers are in use, so disabled
-     * for now. Can we get rid of this completely? AFAICT this ctrl has been
-     * present since CMS was first put in - but has never been used to do
-     * anything. All internal implementations just return 1 and ignore this ctrl
-     * and have always done so by the looks of things. To fix this we could
-     * convert this ctrl into a param, which would require us to send all the
-     * signer info data as a set of params...but that is non-trivial and since
-     * this isn't used by anything it may be better just to remove it.
-     */
-#if 0
-    if (EVP_PKEY_CTX_ctrl(pctx, -1, EVP_PKEY_OP_SIGN,
-                          EVP_PKEY_CTRL_CMS_SIGN, 1, si) <= 0) {
-        ERR_raise(ERR_LIB_CMS, CMS_R_CTRL_ERROR);
-        goto err;
-    }
-#endif
 
     EVP_MD_CTX_reset(mctx);
 
@@ -828,7 +793,7 @@ int CMS_SignerInfo_verify(CMS_SignerInfo *si)
         return -1;
     }
 
-    if (!CMS_si_check_attributes(si))
+    if (!ossl_cms_si_check_attributes(si))
         return -1;
 
     name = OBJ_nid2sn(OBJ_obj2nid(si->digestAlgorithm->algorithm));
@@ -853,7 +818,7 @@ int CMS_SignerInfo_verify(CMS_SignerInfo *si)
     }
     mctx = si->mctx;
     if (EVP_DigestVerifyInit_ex(mctx, &si->pctx, EVP_MD_name(md), libctx,
-                                propq, si->pkey) <= 0)
+                                propq, si->pkey, NULL) <= 0)
         goto err;
 
     if (!cms_sd_asn1_ctrl(si, 1))
