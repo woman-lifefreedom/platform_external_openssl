@@ -258,7 +258,7 @@ int x509_main(int argc, char **argv)
     X509 *x = NULL, *xca = NULL, *issuer_cert;
     X509_REQ *req = NULL, *rq = NULL;
     X509_STORE *ctx = NULL;
-    const EVP_MD *digest = NULL;
+    EVP_MD *digest = NULL;
     char *CAkeyfile = NULL, *CAserial = NULL, *pubkeyfile = NULL, *alias = NULL;
     char *checkhost = NULL, *checkemail = NULL, *checkip = NULL;
     char *ext_names = NULL;
@@ -578,7 +578,9 @@ int x509_main(int argc, char **argv)
     if (argc != 0)
         goto opthelp;
 
-    app_RAND_load();
+    if (!app_RAND_load())
+        goto end;
+
     if (digestname != NULL) {
         if (!opt_md(digestname, &digest))
             goto opthelp;
@@ -1036,6 +1038,7 @@ int x509_main(int argc, char **argv)
     EVP_PKEY_free(privkey);
     EVP_PKEY_free(CAkey);
     EVP_PKEY_free(pubkey);
+    EVP_MD_free(digest);
     sk_OPENSSL_STRING_free(sigopts);
     sk_OPENSSL_STRING_free(vfyopts);
     X509_REQ_free(rq);

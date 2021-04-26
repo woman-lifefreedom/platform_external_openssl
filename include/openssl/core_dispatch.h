@@ -552,13 +552,15 @@ OSSL_CORE_MAKE_FUNC(void, keymgmt_free, (void *keydata))
 #define OSSL_FUNC_KEYMGMT_GETTABLE_PARAMS             12
 OSSL_CORE_MAKE_FUNC(int, keymgmt_get_params,
                     (void *keydata, OSSL_PARAM params[]))
-OSSL_CORE_MAKE_FUNC(const OSSL_PARAM *, keymgmt_gettable_params, (void *))
+OSSL_CORE_MAKE_FUNC(const OSSL_PARAM *, keymgmt_gettable_params,
+                    (void *provctx))
 
 #define OSSL_FUNC_KEYMGMT_SET_PARAMS                  13
 #define OSSL_FUNC_KEYMGMT_SETTABLE_PARAMS             14
 OSSL_CORE_MAKE_FUNC(int, keymgmt_set_params,
                     (void *keydata, const OSSL_PARAM params[]))
-OSSL_CORE_MAKE_FUNC(const OSSL_PARAM *, keymgmt_settable_params, (void *))
+OSSL_CORE_MAKE_FUNC(const OSSL_PARAM *, keymgmt_settable_params,
+                    (void *provctx))
 
 /* Key checks - discovery of supported operations */
 # define OSSL_FUNC_KEYMGMT_QUERY_OPERATION_NAME       20
@@ -595,11 +597,10 @@ OSSL_CORE_MAKE_FUNC(int, keymgmt_export,
 OSSL_CORE_MAKE_FUNC(const OSSL_PARAM *, keymgmt_export_types,
                     (int selection))
 
-/* Copy function, only works for matching keymgmt */
-# define OSSL_FUNC_KEYMGMT_COPY                       44
-OSSL_CORE_MAKE_FUNC(int, keymgmt_copy,
-                    ( void *keydata_to, const void *keydata_from,
-                     int selection))
+/* Dup function, constructor */
+# define OSSL_FUNC_KEYMGMT_DUP                        44
+OSSL_CORE_MAKE_FUNC(void *, keymgmt_dup,
+                    (const void *keydata_from, int selection))
 
 /* Key Exchange */
 
@@ -851,7 +852,7 @@ OSSL_CORE_MAKE_FUNC(int, decoder_does_selection,
                     (void *provctx, int selection))
 OSSL_CORE_MAKE_FUNC(int, decoder_decode,
                     (void *ctx, OSSL_CORE_BIO *in, int selection,
-                     OSSL_CALLBACK *metadata_cb, void *metadata_cbarg,
+                     OSSL_CALLBACK *data_cb, void *data_cbarg,
                      OSSL_PASSPHRASE_CALLBACK *pw_cb, void *pw_cbarg))
 OSSL_CORE_MAKE_FUNC(int, decoder_export_object,
                     (void *ctx, const void *objref, size_t objref_sz,

@@ -251,10 +251,11 @@ set(crypto_srcs
         crypto/dso/dso_openssl.c
         crypto/ebcdic.c
         crypto/ec/curve25519.c
+        crypto/ec/curve448/arch_32/f_impl32.c
+        crypto/ec/curve448/arch_64/f_impl64.c
         crypto/ec/curve448/curve448_tables.c
         crypto/ec/curve448/curve448.c
         crypto/ec/curve448/eddsa.c
-        crypto/ec/curve448/arch_32/f_impl.c
         crypto/ec/curve448/scalar.c
         crypto/ec/curve448/f_generic.c
         crypto/ec/ec2_oct.c
@@ -453,6 +454,7 @@ set(crypto_srcs
         crypto/ocsp/v3_ocsp.c
         crypto/packet.c
         crypto/params.c
+        crypto/params_dup.c
         crypto/param_build.c
         crypto/param_build_set.c
         crypto/params_from_text.c

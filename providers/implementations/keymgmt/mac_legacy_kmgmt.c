@@ -291,7 +291,7 @@ static int mac_export(void *keydata, int selection, OSSL_CALLBACK *param_cb,
         goto err;
 
     ret = param_cb(params, cbarg);
-    OSSL_PARAM_BLD_free_params(params);
+    OSSL_PARAM_free(params);
 err:
     OSSL_PARAM_BLD_free(tmpl);
     return ret;
@@ -547,7 +547,7 @@ const OSSL_DISPATCH ossl_mac_legacy_keymgmt_functions[] = {
     { 0, NULL }
 };
 
-const OSSL_DISPATCH ossl_cossl_mac_legacy_keymgmt_functions[] = {
+const OSSL_DISPATCH ossl_cmac_legacy_keymgmt_functions[] = {
     { OSSL_FUNC_KEYMGMT_NEW, (void (*)(void))mac_new_cmac },
     { OSSL_FUNC_KEYMGMT_FREE, (void (*)(void))mac_free },
     { OSSL_FUNC_KEYMGMT_GET_PARAMS, (void (*) (void))mac_get_params },

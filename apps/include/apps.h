@@ -46,7 +46,7 @@
 # define _UC(c) ((unsigned char)(c))
 
 void app_RAND_load_conf(CONF *c, const char *section);
-void app_RAND_write(void);
+int app_RAND_write(void);
 int app_RAND_load(void);
 
 extern char *default_config_file; /* may be "" */
@@ -212,7 +212,7 @@ typedef struct ca_db_st {
 } CA_DB;
 
 void app_bail_out(char *fmt, ...);
-void* app_malloc(int sz, const char *what);
+void *app_malloc(size_t sz, const char *what);
 BIGNUM *load_serial(const char *serialfile, int create, ASN1_INTEGER **retai);
 int save_serial(const char *serialfile, const char *suffix, const BIGNUM *serial,
                 ASN1_INTEGER **retai);

@@ -55,6 +55,7 @@ static OSSL_FUNC_keymgmt_import_types_fn ec_import_types;
 static OSSL_FUNC_keymgmt_export_fn ec_export;
 static OSSL_FUNC_keymgmt_export_types_fn ec_export_types;
 static OSSL_FUNC_keymgmt_query_operation_name_fn ec_query_operation_name;
+static OSSL_FUNC_keymgmt_dup_fn ec_dup;
 #ifndef FIPS_MODULE
 # ifndef OPENSSL_NO_SM2
 static OSSL_FUNC_keymgmt_new_fn sm2_newdata;
@@ -489,7 +490,7 @@ int ec_export(void *keydata, int selection, OSSL_CALLBACK *param_cb,
     if (ok && (params = OSSL_PARAM_BLD_to_param(tmpl)) != NULL)
         ok = param_cb(params, cbarg);
 end:
-    OSSL_PARAM_BLD_free_params(params);
+    OSSL_PARAM_free(params);
     OSSL_PARAM_BLD_free(tmpl);
     OPENSSL_free(pub_key);
     OPENSSL_free(genbuf);
@@ -1158,7 +1159,7 @@ build:
 
     ret = 1;
 err:
-    OSSL_PARAM_BLD_free_params(params);
+    OSSL_PARAM_free(params);
     OSSL_PARAM_BLD_free(bld);
     return ret;
 }
@@ -1361,6 +1362,13 @@ static void *sm2_load(const void *reference, size_t reference_sz)
 # endif
 #endif
 
+static void *ec_dup(const void *keydata_from, int selection)
+{
+    if (ossl_prov_is_running())
+        return ossl_ec_key_dup(keydata_from, selection);
+    return NULL;
+}
+
 const OSSL_DISPATCH ossl_ec_keymgmt_functions[] = {
     { OSSL_FUNC_KEYMGMT_NEW, (void (*)(void))ec_newdata },
     { OSSL_FUNC_KEYMGMT_GEN_INIT, (void (*)(void))ec_gen_init },
@@ -1386,6 +1394,7 @@ const OSSL_DISPATCH ossl_ec_keymgmt_functions[] = {
     { OSSL_FUNC_KEYMGMT_EXPORT_TYPES, (void (*)(void))ec_export_types },
     { OSSL_FUNC_KEYMGMT_QUERY_OPERATION_NAME,
       (void (*)(void))ec_query_operation_name },
+    { OSSL_FUNC_KEYMGMT_DUP, (void (*)(void))ec_dup },
     { 0, NULL }
 };
 
@@ -1416,6 +1425,7 @@ const OSSL_DISPATCH ossl_sm2_keymgmt_functions[] = {
     { OSSL_FUNC_KEYMGMT_EXPORT_TYPES, (void (*)(void))ec_export_types },
     { OSSL_FUNC_KEYMGMT_QUERY_OPERATION_NAME,
       (void (*)(void))sm2_query_operation_name },
+    { OSSL_FUNC_KEYMGMT_DUP, (void (*)(void))ec_dup },
     { 0, NULL }
 };
 # endif
