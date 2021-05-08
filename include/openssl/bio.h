@@ -29,6 +29,7 @@
 
 # include <openssl/crypto.h>
 # include <openssl/bioerr.h>
+# include <openssl/core.h>
 
 #ifdef  __cplusplus
 extern "C" {
@@ -65,7 +66,7 @@ extern "C" {
 # ifndef OPENSSL_NO_SCTP
 #  define BIO_TYPE_DGRAM_SCTP    (24|BIO_TYPE_SOURCE_SINK|BIO_TYPE_DESCRIPTOR)
 # endif
-# define BIO_TYPE_CORE_TO_PROV   (25|BIO_TYPE_FILTER)
+# define BIO_TYPE_CORE_TO_PROV   (25|BIO_TYPE_SOURCE_SINK)
 
 #define BIO_TYPE_START           128
 
@@ -311,6 +312,7 @@ SKM_DEFINE_STACK_OF_INTERNAL(BIO, BIO, BIO)
 #define sk_BIO_set(sk, idx, ptr) ((BIO *)OPENSSL_sk_set(ossl_check_BIO_sk_type(sk), (idx), ossl_check_BIO_type(ptr)))
 #define sk_BIO_find(sk, ptr) OPENSSL_sk_find(ossl_check_BIO_sk_type(sk), ossl_check_BIO_type(ptr))
 #define sk_BIO_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_BIO_sk_type(sk), ossl_check_BIO_type(ptr))
+#define sk_BIO_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_BIO_sk_type(sk), ossl_check_BIO_type(ptr), pnum)
 #define sk_BIO_sort(sk) OPENSSL_sk_sort(ossl_check_BIO_sk_type(sk))
 #define sk_BIO_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_BIO_sk_type(sk))
 #define sk_BIO_dup(sk) ((STACK_OF(BIO) *)OPENSSL_sk_dup(ossl_check_const_BIO_sk_type(sk)))
@@ -612,9 +614,11 @@ int BIO_asn1_get_suffix(BIO *b, asn1_ps_func **psuffix,
 
 const BIO_METHOD *BIO_s_file(void);
 BIO *BIO_new_file(const char *filename, const char *mode);
+BIO *BIO_new_from_core_bio(OSSL_LIB_CTX *libctx, OSSL_CORE_BIO *corebio);
 # ifndef OPENSSL_NO_STDIO
 BIO *BIO_new_fp(FILE *stream, int close_flag);
 # endif
+BIO *BIO_new_ex(OSSL_LIB_CTX *libctx, const BIO_METHOD *method);
 BIO *BIO_new(const BIO_METHOD *type);
 int BIO_free(BIO *a);
 void BIO_set_data(BIO *a, void *ptr);
@@ -673,6 +677,7 @@ const BIO_METHOD *BIO_f_readbuffer(void);
 const BIO_METHOD *BIO_f_linebuffer(void);
 const BIO_METHOD *BIO_f_nbio_test(void);
 const BIO_METHOD *BIO_f_prefix(void);
+const BIO_METHOD *BIO_s_core(void);
 # ifndef OPENSSL_NO_DGRAM
 const BIO_METHOD *BIO_s_datagram(void);
 int BIO_dgram_non_fatal_error(int error);

@@ -51,6 +51,7 @@ SKM_DEFINE_STACK_OF_INTERNAL(ESS_CERT_ID, ESS_CERT_ID, ESS_CERT_ID)
 #define sk_ESS_CERT_ID_set(sk, idx, ptr) ((ESS_CERT_ID *)OPENSSL_sk_set(ossl_check_ESS_CERT_ID_sk_type(sk), (idx), ossl_check_ESS_CERT_ID_type(ptr)))
 #define sk_ESS_CERT_ID_find(sk, ptr) OPENSSL_sk_find(ossl_check_ESS_CERT_ID_sk_type(sk), ossl_check_ESS_CERT_ID_type(ptr))
 #define sk_ESS_CERT_ID_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_ESS_CERT_ID_sk_type(sk), ossl_check_ESS_CERT_ID_type(ptr))
+#define sk_ESS_CERT_ID_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_ESS_CERT_ID_sk_type(sk), ossl_check_ESS_CERT_ID_type(ptr), pnum)
 #define sk_ESS_CERT_ID_sort(sk) OPENSSL_sk_sort(ossl_check_ESS_CERT_ID_sk_type(sk))
 #define sk_ESS_CERT_ID_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_ESS_CERT_ID_sk_type(sk))
 #define sk_ESS_CERT_ID_dup(sk) ((STACK_OF(ESS_CERT_ID) *)OPENSSL_sk_dup(ossl_check_const_ESS_CERT_ID_sk_type(sk)))
@@ -82,12 +83,12 @@ SKM_DEFINE_STACK_OF_INTERNAL(ESS_CERT_ID_V2, ESS_CERT_ID_V2, ESS_CERT_ID_V2)
 #define sk_ESS_CERT_ID_V2_set(sk, idx, ptr) ((ESS_CERT_ID_V2 *)OPENSSL_sk_set(ossl_check_ESS_CERT_ID_V2_sk_type(sk), (idx), ossl_check_ESS_CERT_ID_V2_type(ptr)))
 #define sk_ESS_CERT_ID_V2_find(sk, ptr) OPENSSL_sk_find(ossl_check_ESS_CERT_ID_V2_sk_type(sk), ossl_check_ESS_CERT_ID_V2_type(ptr))
 #define sk_ESS_CERT_ID_V2_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_ESS_CERT_ID_V2_sk_type(sk), ossl_check_ESS_CERT_ID_V2_type(ptr))
+#define sk_ESS_CERT_ID_V2_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_ESS_CERT_ID_V2_sk_type(sk), ossl_check_ESS_CERT_ID_V2_type(ptr), pnum)
 #define sk_ESS_CERT_ID_V2_sort(sk) OPENSSL_sk_sort(ossl_check_ESS_CERT_ID_V2_sk_type(sk))
 #define sk_ESS_CERT_ID_V2_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_ESS_CERT_ID_V2_sk_type(sk))
 #define sk_ESS_CERT_ID_V2_dup(sk) ((STACK_OF(ESS_CERT_ID_V2) *)OPENSSL_sk_dup(ossl_check_const_ESS_CERT_ID_V2_sk_type(sk)))
 #define sk_ESS_CERT_ID_V2_deep_copy(sk, copyfunc, freefunc) ((STACK_OF(ESS_CERT_ID_V2) *)OPENSSL_sk_deep_copy(ossl_check_const_ESS_CERT_ID_V2_sk_type(sk), ossl_check_ESS_CERT_ID_V2_copyfunc_type(copyfunc), ossl_check_ESS_CERT_ID_V2_freefunc_type(freefunc)))
 #define sk_ESS_CERT_ID_V2_set_cmp_func(sk, cmp) ((sk_ESS_CERT_ID_V2_compfunc)OPENSSL_sk_set_cmp_func(ossl_check_ESS_CERT_ID_V2_sk_type(sk), ossl_check_ESS_CERT_ID_V2_compfunc_type(cmp)))
-
 
 
 DECLARE_ASN1_ALLOC_FUNCTIONS(ESS_ISSUER_SERIAL)
@@ -98,17 +99,28 @@ DECLARE_ASN1_ALLOC_FUNCTIONS(ESS_CERT_ID)
 DECLARE_ASN1_ENCODE_FUNCTIONS_only(ESS_CERT_ID, ESS_CERT_ID)
 DECLARE_ASN1_DUP_FUNCTION(ESS_CERT_ID)
 
-DECLARE_ASN1_ALLOC_FUNCTIONS(ESS_SIGNING_CERT)
-DECLARE_ASN1_ENCODE_FUNCTIONS_only(ESS_SIGNING_CERT, ESS_SIGNING_CERT)
+DECLARE_ASN1_FUNCTIONS(ESS_SIGNING_CERT)
 DECLARE_ASN1_DUP_FUNCTION(ESS_SIGNING_CERT)
 
 DECLARE_ASN1_ALLOC_FUNCTIONS(ESS_CERT_ID_V2)
 DECLARE_ASN1_ENCODE_FUNCTIONS_only(ESS_CERT_ID_V2, ESS_CERT_ID_V2)
 DECLARE_ASN1_DUP_FUNCTION(ESS_CERT_ID_V2)
 
-DECLARE_ASN1_ALLOC_FUNCTIONS(ESS_SIGNING_CERT_V2)
-DECLARE_ASN1_ENCODE_FUNCTIONS_only(ESS_SIGNING_CERT_V2, ESS_SIGNING_CERT_V2)
+DECLARE_ASN1_FUNCTIONS(ESS_SIGNING_CERT_V2)
 DECLARE_ASN1_DUP_FUNCTION(ESS_SIGNING_CERT_V2)
+
+ESS_SIGNING_CERT *OSSL_ESS_signing_cert_new_init(const X509 *signcert,
+                                                 const STACK_OF(X509) *certs,
+                                                 int set_issuer_serial);
+ESS_SIGNING_CERT_V2 *OSSL_ESS_signing_cert_v2_new_init(const EVP_MD *hash_alg,
+                                                       const X509 *signcert,
+                                                       const
+                                                       STACK_OF(X509) *certs,
+                                                       int set_issuer_serial);
+int OSSL_ESS_check_signing_certs(const ESS_SIGNING_CERT *ss,
+                                 const ESS_SIGNING_CERT_V2 *ssv2,
+                                 const STACK_OF(X509) *chain,
+                                 int require_signing_cert);
 
 # ifdef  __cplusplus
 }

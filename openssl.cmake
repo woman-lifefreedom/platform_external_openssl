@@ -99,6 +99,7 @@ set(crypto_srcs
         crypto/bio/bss_acpt.c
         crypto/bio/bss_bio.c
         crypto/bio/bss_conn.c
+        crypto/bio/bss_core.c
         crypto/bio/bss_dgram.c
         crypto/bio/bss_fd.c
         crypto/bio/bss_file.c

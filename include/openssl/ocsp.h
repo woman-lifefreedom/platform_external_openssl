@@ -112,6 +112,7 @@ SKM_DEFINE_STACK_OF_INTERNAL(OCSP_CERTID, OCSP_CERTID, OCSP_CERTID)
 #define sk_OCSP_CERTID_set(sk, idx, ptr) ((OCSP_CERTID *)OPENSSL_sk_set(ossl_check_OCSP_CERTID_sk_type(sk), (idx), ossl_check_OCSP_CERTID_type(ptr)))
 #define sk_OCSP_CERTID_find(sk, ptr) OPENSSL_sk_find(ossl_check_OCSP_CERTID_sk_type(sk), ossl_check_OCSP_CERTID_type(ptr))
 #define sk_OCSP_CERTID_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_OCSP_CERTID_sk_type(sk), ossl_check_OCSP_CERTID_type(ptr))
+#define sk_OCSP_CERTID_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_OCSP_CERTID_sk_type(sk), ossl_check_OCSP_CERTID_type(ptr), pnum)
 #define sk_OCSP_CERTID_sort(sk) OPENSSL_sk_sort(ossl_check_OCSP_CERTID_sk_type(sk))
 #define sk_OCSP_CERTID_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_OCSP_CERTID_sk_type(sk))
 #define sk_OCSP_CERTID_dup(sk) ((STACK_OF(OCSP_CERTID) *)OPENSSL_sk_dup(ossl_check_const_OCSP_CERTID_sk_type(sk)))
@@ -137,6 +138,7 @@ SKM_DEFINE_STACK_OF_INTERNAL(OCSP_ONEREQ, OCSP_ONEREQ, OCSP_ONEREQ)
 #define sk_OCSP_ONEREQ_set(sk, idx, ptr) ((OCSP_ONEREQ *)OPENSSL_sk_set(ossl_check_OCSP_ONEREQ_sk_type(sk), (idx), ossl_check_OCSP_ONEREQ_type(ptr)))
 #define sk_OCSP_ONEREQ_find(sk, ptr) OPENSSL_sk_find(ossl_check_OCSP_ONEREQ_sk_type(sk), ossl_check_OCSP_ONEREQ_type(ptr))
 #define sk_OCSP_ONEREQ_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_OCSP_ONEREQ_sk_type(sk), ossl_check_OCSP_ONEREQ_type(ptr))
+#define sk_OCSP_ONEREQ_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_OCSP_ONEREQ_sk_type(sk), ossl_check_OCSP_ONEREQ_type(ptr), pnum)
 #define sk_OCSP_ONEREQ_sort(sk) OPENSSL_sk_sort(ossl_check_OCSP_ONEREQ_sk_type(sk))
 #define sk_OCSP_ONEREQ_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_OCSP_ONEREQ_sk_type(sk))
 #define sk_OCSP_ONEREQ_dup(sk) ((STACK_OF(OCSP_ONEREQ) *)OPENSSL_sk_dup(ossl_check_const_OCSP_ONEREQ_sk_type(sk)))
@@ -176,6 +178,7 @@ SKM_DEFINE_STACK_OF_INTERNAL(OCSP_RESPID, OCSP_RESPID, OCSP_RESPID)
 #define sk_OCSP_RESPID_set(sk, idx, ptr) ((OCSP_RESPID *)OPENSSL_sk_set(ossl_check_OCSP_RESPID_sk_type(sk), (idx), ossl_check_OCSP_RESPID_type(ptr)))
 #define sk_OCSP_RESPID_find(sk, ptr) OPENSSL_sk_find(ossl_check_OCSP_RESPID_sk_type(sk), ossl_check_OCSP_RESPID_type(ptr))
 #define sk_OCSP_RESPID_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_OCSP_RESPID_sk_type(sk), ossl_check_OCSP_RESPID_type(ptr))
+#define sk_OCSP_RESPID_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_OCSP_RESPID_sk_type(sk), ossl_check_OCSP_RESPID_type(ptr), pnum)
 #define sk_OCSP_RESPID_sort(sk) OPENSSL_sk_sort(ossl_check_OCSP_RESPID_sk_type(sk))
 #define sk_OCSP_RESPID_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_OCSP_RESPID_sk_type(sk))
 #define sk_OCSP_RESPID_dup(sk) ((STACK_OF(OCSP_RESPID) *)OPENSSL_sk_dup(ossl_check_const_OCSP_RESPID_sk_type(sk)))
@@ -212,6 +215,7 @@ SKM_DEFINE_STACK_OF_INTERNAL(OCSP_SINGLERESP, OCSP_SINGLERESP, OCSP_SINGLERESP)
 #define sk_OCSP_SINGLERESP_set(sk, idx, ptr) ((OCSP_SINGLERESP *)OPENSSL_sk_set(ossl_check_OCSP_SINGLERESP_sk_type(sk), (idx), ossl_check_OCSP_SINGLERESP_type(ptr)))
 #define sk_OCSP_SINGLERESP_find(sk, ptr) OPENSSL_sk_find(ossl_check_OCSP_SINGLERESP_sk_type(sk), ossl_check_OCSP_SINGLERESP_type(ptr))
 #define sk_OCSP_SINGLERESP_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_OCSP_SINGLERESP_sk_type(sk), ossl_check_OCSP_SINGLERESP_type(ptr))
+#define sk_OCSP_SINGLERESP_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_OCSP_SINGLERESP_sk_type(sk), ossl_check_OCSP_SINGLERESP_type(ptr), pnum)
 #define sk_OCSP_SINGLERESP_sort(sk) OPENSSL_sk_sort(ossl_check_OCSP_SINGLERESP_sk_type(sk))
 #define sk_OCSP_SINGLERESP_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_OCSP_SINGLERESP_sk_type(sk))
 #define sk_OCSP_SINGLERESP_dup(sk) ((STACK_OF(OCSP_SINGLERESP) *)OPENSSL_sk_dup(ossl_check_const_OCSP_SINGLERESP_sk_type(sk)))
@@ -278,8 +282,10 @@ typedef OSSL_HTTP_REQ_CTX OCSP_REQ_CTX;
                                            NULL, NULL, path)
 #   define OCSP_REQ_CTX_add1_header(r, n, v) \
         OSSL_HTTP_REQ_CTX_add1_header(r, n, v)
-#   define OCSP_REQ_CTX_i2d(r, i, req) \
-        OSSL_HTTP_REQ_CTX_set1_req(r, "application/ocsp-request", i, req)
+#   define OCSP_REQ_CTX_i2d(r, it, req) \
+        OSSL_HTTP_REQ_CTX_set1_req(r, "application/ocsp-request", it, req)
+#   define OCSP_REQ_CTX_set1_req(r, req) \
+        OCSP_REQ_CTX_i2d(r, ASN1_ITEM_rptr(OCSP_REQUEST), (ASN1_VALUE *)(req))
 #   define OCSP_REQ_CTX_nbio(r) \
         OSSL_HTTP_REQ_CTX_nbio(r)
 #   define OCSP_REQ_CTX_nbio_d2i(r, p, i)        \
@@ -288,8 +294,6 @@ typedef OSSL_HTTP_REQ_CTX OCSP_REQ_CTX;
         OSSL_HTTP_REQ_CTX_get0_mem_bio(r)
 #   define OCSP_set_max_response_length(r, l) \
         OSSL_HTTP_REQ_CTX_set_max_response_length(r, l)
-#   define OCSP_REQ_CTX_set1_req(r, req) \
-        OCSP_REQ_CTX_i2d(r, ASN1_ITEM_rptr(OCSP_REQUEST), (ASN1_VALUE *)(req))
 #  endif
 
 OCSP_CERTID *OCSP_cert_to_id(const EVP_MD *dgst, const X509 *subject,

@@ -66,6 +66,7 @@ SKM_DEFINE_STACK_OF_INTERNAL(X509_NAME, X509_NAME, X509_NAME)
 #define sk_X509_NAME_set(sk, idx, ptr) ((X509_NAME *)OPENSSL_sk_set(ossl_check_X509_NAME_sk_type(sk), (idx), ossl_check_X509_NAME_type(ptr)))
 #define sk_X509_NAME_find(sk, ptr) OPENSSL_sk_find(ossl_check_X509_NAME_sk_type(sk), ossl_check_X509_NAME_type(ptr))
 #define sk_X509_NAME_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_X509_NAME_sk_type(sk), ossl_check_X509_NAME_type(ptr))
+#define sk_X509_NAME_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_X509_NAME_sk_type(sk), ossl_check_X509_NAME_type(ptr), pnum)
 #define sk_X509_NAME_sort(sk) OPENSSL_sk_sort(ossl_check_X509_NAME_sk_type(sk))
 #define sk_X509_NAME_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_X509_NAME_sk_type(sk))
 #define sk_X509_NAME_dup(sk) ((STACK_OF(X509_NAME) *)OPENSSL_sk_dup(ossl_check_const_X509_NAME_sk_type(sk)))
@@ -91,6 +92,7 @@ SKM_DEFINE_STACK_OF_INTERNAL(X509, X509, X509)
 #define sk_X509_set(sk, idx, ptr) ((X509 *)OPENSSL_sk_set(ossl_check_X509_sk_type(sk), (idx), ossl_check_X509_type(ptr)))
 #define sk_X509_find(sk, ptr) OPENSSL_sk_find(ossl_check_X509_sk_type(sk), ossl_check_X509_type(ptr))
 #define sk_X509_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_X509_sk_type(sk), ossl_check_X509_type(ptr))
+#define sk_X509_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_X509_sk_type(sk), ossl_check_X509_type(ptr), pnum)
 #define sk_X509_sort(sk) OPENSSL_sk_sort(ossl_check_X509_sk_type(sk))
 #define sk_X509_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_X509_sk_type(sk))
 #define sk_X509_dup(sk) ((STACK_OF(X509) *)OPENSSL_sk_dup(ossl_check_const_X509_sk_type(sk)))
@@ -116,6 +118,7 @@ SKM_DEFINE_STACK_OF_INTERNAL(X509_REVOKED, X509_REVOKED, X509_REVOKED)
 #define sk_X509_REVOKED_set(sk, idx, ptr) ((X509_REVOKED *)OPENSSL_sk_set(ossl_check_X509_REVOKED_sk_type(sk), (idx), ossl_check_X509_REVOKED_type(ptr)))
 #define sk_X509_REVOKED_find(sk, ptr) OPENSSL_sk_find(ossl_check_X509_REVOKED_sk_type(sk), ossl_check_X509_REVOKED_type(ptr))
 #define sk_X509_REVOKED_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_X509_REVOKED_sk_type(sk), ossl_check_X509_REVOKED_type(ptr))
+#define sk_X509_REVOKED_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_X509_REVOKED_sk_type(sk), ossl_check_X509_REVOKED_type(ptr), pnum)
 #define sk_X509_REVOKED_sort(sk) OPENSSL_sk_sort(ossl_check_X509_REVOKED_sk_type(sk))
 #define sk_X509_REVOKED_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_X509_REVOKED_sk_type(sk))
 #define sk_X509_REVOKED_dup(sk) ((STACK_OF(X509_REVOKED) *)OPENSSL_sk_dup(ossl_check_const_X509_REVOKED_sk_type(sk)))
@@ -141,6 +144,7 @@ SKM_DEFINE_STACK_OF_INTERNAL(X509_CRL, X509_CRL, X509_CRL)
 #define sk_X509_CRL_set(sk, idx, ptr) ((X509_CRL *)OPENSSL_sk_set(ossl_check_X509_CRL_sk_type(sk), (idx), ossl_check_X509_CRL_type(ptr)))
 #define sk_X509_CRL_find(sk, ptr) OPENSSL_sk_find(ossl_check_X509_CRL_sk_type(sk), ossl_check_X509_CRL_type(ptr))
 #define sk_X509_CRL_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_X509_CRL_sk_type(sk), ossl_check_X509_CRL_type(ptr))
+#define sk_X509_CRL_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_X509_CRL_sk_type(sk), ossl_check_X509_CRL_type(ptr), pnum)
 #define sk_X509_CRL_sort(sk) OPENSSL_sk_sort(ossl_check_X509_CRL_sk_type(sk))
 #define sk_X509_CRL_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_X509_CRL_sk_type(sk))
 #define sk_X509_CRL_dup(sk) ((STACK_OF(X509_CRL) *)OPENSSL_sk_dup(ossl_check_const_X509_CRL_sk_type(sk)))
@@ -205,6 +209,7 @@ SKM_DEFINE_STACK_OF_INTERNAL(X509_NAME_ENTRY, X509_NAME_ENTRY, X509_NAME_ENTRY)
 #define sk_X509_NAME_ENTRY_set(sk, idx, ptr) ((X509_NAME_ENTRY *)OPENSSL_sk_set(ossl_check_X509_NAME_ENTRY_sk_type(sk), (idx), ossl_check_X509_NAME_ENTRY_type(ptr)))
 #define sk_X509_NAME_ENTRY_find(sk, ptr) OPENSSL_sk_find(ossl_check_X509_NAME_ENTRY_sk_type(sk), ossl_check_X509_NAME_ENTRY_type(ptr))
 #define sk_X509_NAME_ENTRY_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_X509_NAME_ENTRY_sk_type(sk), ossl_check_X509_NAME_ENTRY_type(ptr))
+#define sk_X509_NAME_ENTRY_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_X509_NAME_ENTRY_sk_type(sk), ossl_check_X509_NAME_ENTRY_type(ptr), pnum)
 #define sk_X509_NAME_ENTRY_sort(sk) OPENSSL_sk_sort(ossl_check_X509_NAME_ENTRY_sk_type(sk))
 #define sk_X509_NAME_ENTRY_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_X509_NAME_ENTRY_sk_type(sk))
 #define sk_X509_NAME_ENTRY_dup(sk) ((STACK_OF(X509_NAME_ENTRY) *)OPENSSL_sk_dup(ossl_check_const_X509_NAME_ENTRY_sk_type(sk)))
@@ -235,6 +240,7 @@ SKM_DEFINE_STACK_OF_INTERNAL(X509_EXTENSION, X509_EXTENSION, X509_EXTENSION)
 #define sk_X509_EXTENSION_set(sk, idx, ptr) ((X509_EXTENSION *)OPENSSL_sk_set(ossl_check_X509_EXTENSION_sk_type(sk), (idx), ossl_check_X509_EXTENSION_type(ptr)))
 #define sk_X509_EXTENSION_find(sk, ptr) OPENSSL_sk_find(ossl_check_X509_EXTENSION_sk_type(sk), ossl_check_X509_EXTENSION_type(ptr))
 #define sk_X509_EXTENSION_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_X509_EXTENSION_sk_type(sk), ossl_check_X509_EXTENSION_type(ptr))
+#define sk_X509_EXTENSION_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_X509_EXTENSION_sk_type(sk), ossl_check_X509_EXTENSION_type(ptr), pnum)
 #define sk_X509_EXTENSION_sort(sk) OPENSSL_sk_sort(ossl_check_X509_EXTENSION_sk_type(sk))
 #define sk_X509_EXTENSION_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_X509_EXTENSION_sk_type(sk))
 #define sk_X509_EXTENSION_dup(sk) ((STACK_OF(X509_EXTENSION) *)OPENSSL_sk_dup(ossl_check_const_X509_EXTENSION_sk_type(sk)))
@@ -263,6 +269,7 @@ SKM_DEFINE_STACK_OF_INTERNAL(X509_ATTRIBUTE, X509_ATTRIBUTE, X509_ATTRIBUTE)
 #define sk_X509_ATTRIBUTE_set(sk, idx, ptr) ((X509_ATTRIBUTE *)OPENSSL_sk_set(ossl_check_X509_ATTRIBUTE_sk_type(sk), (idx), ossl_check_X509_ATTRIBUTE_type(ptr)))
 #define sk_X509_ATTRIBUTE_find(sk, ptr) OPENSSL_sk_find(ossl_check_X509_ATTRIBUTE_sk_type(sk), ossl_check_X509_ATTRIBUTE_type(ptr))
 #define sk_X509_ATTRIBUTE_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_X509_ATTRIBUTE_sk_type(sk), ossl_check_X509_ATTRIBUTE_type(ptr))
+#define sk_X509_ATTRIBUTE_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_X509_ATTRIBUTE_sk_type(sk), ossl_check_X509_ATTRIBUTE_type(ptr), pnum)
 #define sk_X509_ATTRIBUTE_sort(sk) OPENSSL_sk_sort(ossl_check_X509_ATTRIBUTE_sk_type(sk))
 #define sk_X509_ATTRIBUTE_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_X509_ATTRIBUTE_sk_type(sk))
 #define sk_X509_ATTRIBUTE_dup(sk) ((STACK_OF(X509_ATTRIBUTE) *)OPENSSL_sk_dup(ossl_check_const_X509_ATTRIBUTE_sk_type(sk)))
@@ -304,6 +311,7 @@ SKM_DEFINE_STACK_OF_INTERNAL(X509_TRUST, X509_TRUST, X509_TRUST)
 #define sk_X509_TRUST_set(sk, idx, ptr) ((X509_TRUST *)OPENSSL_sk_set(ossl_check_X509_TRUST_sk_type(sk), (idx), ossl_check_X509_TRUST_type(ptr)))
 #define sk_X509_TRUST_find(sk, ptr) OPENSSL_sk_find(ossl_check_X509_TRUST_sk_type(sk), ossl_check_X509_TRUST_type(ptr))
 #define sk_X509_TRUST_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_X509_TRUST_sk_type(sk), ossl_check_X509_TRUST_type(ptr))
+#define sk_X509_TRUST_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_X509_TRUST_sk_type(sk), ossl_check_X509_TRUST_type(ptr), pnum)
 #define sk_X509_TRUST_sort(sk) OPENSSL_sk_sort(ossl_check_X509_TRUST_sk_type(sk))
 #define sk_X509_TRUST_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_X509_TRUST_sk_type(sk))
 #define sk_X509_TRUST_dup(sk) ((STACK_OF(X509_TRUST) *)OPENSSL_sk_dup(ossl_check_const_X509_TRUST_sk_type(sk)))
@@ -468,6 +476,7 @@ SKM_DEFINE_STACK_OF_INTERNAL(X509_INFO, X509_INFO, X509_INFO)
 #define sk_X509_INFO_set(sk, idx, ptr) ((X509_INFO *)OPENSSL_sk_set(ossl_check_X509_INFO_sk_type(sk), (idx), ossl_check_X509_INFO_type(ptr)))
 #define sk_X509_INFO_find(sk, ptr) OPENSSL_sk_find(ossl_check_X509_INFO_sk_type(sk), ossl_check_X509_INFO_type(ptr))
 #define sk_X509_INFO_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_X509_INFO_sk_type(sk), ossl_check_X509_INFO_type(ptr))
+#define sk_X509_INFO_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_X509_INFO_sk_type(sk), ossl_check_X509_INFO_type(ptr), pnum)
 #define sk_X509_INFO_sort(sk) OPENSSL_sk_sort(ossl_check_X509_INFO_sk_type(sk))
 #define sk_X509_INFO_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_X509_INFO_sk_type(sk))
 #define sk_X509_INFO_dup(sk) ((STACK_OF(X509_INFO) *)OPENSSL_sk_dup(ossl_check_const_X509_INFO_sk_type(sk)))
@@ -612,13 +621,14 @@ int X509_NAME_digest(const X509_NAME *data, const EVP_MD *type,
                      unsigned char *md, unsigned int *len);
 
 X509 *X509_load_http(const char *url, BIO *bio, BIO *rbio, int timeout);
-# define X509_http_nbio(rctx, pcert)                                    \
-    ((*(pcert) =                                                        \
-      OSSL_HTTP_REQ_CTX_sendreq_d2i(rctx, ASN1_ITEM_rptr(X509))) != NULL)
 X509_CRL *X509_CRL_load_http(const char *url, BIO *bio, BIO *rbio, int timeout);
-# define X509_CRL_http_nbio(rctx, pcrl)                                 \
-    ((*(pcrl) =                                                         \
-      OSSL_HTTP_REQ_CTX_sendreq_d2i(rctx, ASN1_ITEM_rptr(X509_CRL))) != NULL)
+# ifndef OPENSSL_NO_DEPRECATED_3_0
+#  include <openssl/ocsp.h> /* OCSP_REQ_CTX_nbio_d2i */
+#  define X509_http_nbio(rctx, pcert) \
+      OCSP_REQ_CTX_nbio_d2i(rctx, pcert, ASN1_ITEM_rptr(X509))
+#  define X509_CRL_http_nbio(rctx, pcrl) \
+      OCSP_REQ_CTX_nbio_d2i(rctx, pcrl, ASN1_ITEM_rptr(X509_CRL))
+# endif
 
 # ifndef OPENSSL_NO_STDIO
 X509 *d2i_X509_fp(FILE *fp, X509 **x509);
@@ -897,6 +907,10 @@ int ASN1_item_sign_ctx(const ASN1_ITEM *it, X509_ALGOR *algor1,
                        X509_ALGOR *algor2, ASN1_BIT_STRING *signature,
                        const void *data, EVP_MD_CTX *ctx);
 
+#define X509_VERSION_1 0
+#define X509_VERSION_2 1
+#define X509_VERSION_3 2
+
 long X509_get_version(const X509 *x);
 int X509_set_version(X509 *x, long version);
 int X509_set_serialNumber(X509 *x, ASN1_INTEGER *serial);
@@ -938,6 +952,8 @@ EVP_PKEY *X509_get0_pubkey(const X509 *x);
 EVP_PKEY *X509_get_pubkey(X509 *x);
 ASN1_BIT_STRING *X509_get0_pubkey_bitstr(const X509 *x);
 
+#define X509_REQ_VERSION_1 0
+
 long X509_REQ_get_version(const X509_REQ *req);
 int X509_REQ_set_version(X509_REQ *x, long version);
 X509_NAME *X509_REQ_get_subject_name(const X509_REQ *req); /* TODO change to get0_ */
@@ -975,6 +991,9 @@ int X509_REQ_add1_attr_by_NID(X509_REQ *req,
 int X509_REQ_add1_attr_by_txt(X509_REQ *req,
                               const char *attrname, int type,
                               const unsigned char *bytes, int len);
+
+#define X509_CRL_VERSION_1 0
+#define X509_CRL_VERSION_2 1
 
 int X509_CRL_set_version(X509_CRL *x, long version);
 int X509_CRL_set_issuer_name(X509_CRL *x, const X509_NAME *name);
@@ -1267,14 +1286,25 @@ DECLARE_ASN1_FUNCTIONS(SCRYPT_PARAMS)
 
 int PKCS5_pbe_set0_algor(X509_ALGOR *algor, int alg, int iter,
                          const unsigned char *salt, int saltlen);
+int PKCS5_pbe_set0_algor_ex(X509_ALGOR *algor, int alg, int iter,
+                            const unsigned char *salt, int saltlen,
+                            OSSL_LIB_CTX *libctx);
 
 X509_ALGOR *PKCS5_pbe_set(int alg, int iter,
                           const unsigned char *salt, int saltlen);
+X509_ALGOR *PKCS5_pbe_set_ex(int alg, int iter,
+                             const unsigned char *salt, int saltlen,
+                             OSSL_LIB_CTX *libctx);
+
 X509_ALGOR *PKCS5_pbe2_set(const EVP_CIPHER *cipher, int iter,
                            unsigned char *salt, int saltlen);
 X509_ALGOR *PKCS5_pbe2_set_iv(const EVP_CIPHER *cipher, int iter,
                               unsigned char *salt, int saltlen,
                               unsigned char *aiv, int prf_nid);
+X509_ALGOR *PKCS5_pbe2_set_iv_ex(const EVP_CIPHER *cipher, int iter,
+                                 unsigned char *salt, int saltlen,
+                                 unsigned char *aiv, int prf_nid,
+                                 OSSL_LIB_CTX *libctx);
 
 #ifndef OPENSSL_NO_SCRYPT
 X509_ALGOR *PKCS5_pbe2_set_scrypt(const EVP_CIPHER *cipher,
@@ -1285,6 +1315,9 @@ X509_ALGOR *PKCS5_pbe2_set_scrypt(const EVP_CIPHER *cipher,
 
 X509_ALGOR *PKCS5_pbkdf2_set(int iter, unsigned char *salt, int saltlen,
                              int prf_nid, int keylen);
+X509_ALGOR *PKCS5_pbkdf2_set_ex(int iter, unsigned char *salt, int saltlen,
+                                int prf_nid, int keylen,
+                                OSSL_LIB_CTX *libctx);
 
 /* PKCS#8 utilities */
 

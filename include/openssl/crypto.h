@@ -199,6 +199,7 @@ SKM_DEFINE_STACK_OF_INTERNAL(void, void, void)
 #define sk_void_set(sk, idx, ptr) ((void *)OPENSSL_sk_set(ossl_check_void_sk_type(sk), (idx), ossl_check_void_type(ptr)))
 #define sk_void_find(sk, ptr) OPENSSL_sk_find(ossl_check_void_sk_type(sk), ossl_check_void_type(ptr))
 #define sk_void_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_void_sk_type(sk), ossl_check_void_type(ptr))
+#define sk_void_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_void_sk_type(sk), ossl_check_void_type(ptr), pnum)
 #define sk_void_sort(sk) OPENSSL_sk_sort(ossl_check_void_sk_type(sk))
 #define sk_void_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_void_sk_type(sk))
 #define sk_void_dup(sk) ((STACK_OF(void) *)OPENSSL_sk_dup(ossl_check_const_void_sk_type(sk)))
@@ -457,7 +458,7 @@ int CRYPTO_memcmp(const void * in_a, const void * in_b, size_t len);
 # define OPENSSL_INIT_ENGINE_CAPI            0x00002000L
 # define OPENSSL_INIT_ENGINE_PADLOCK         0x00004000L
 # define OPENSSL_INIT_ENGINE_AFALG           0x00008000L
-/* OPENSSL_INIT_ZLIB                         0x00010000L */
+/* FREE:                                     0x00010000L */
 # define OPENSSL_INIT_ATFORK                 0x00020000L
 /* OPENSSL_INIT_BASE_ONLY                    0x00040000L */
 # define OPENSSL_INIT_NO_ATEXIT              0x00080000L
@@ -539,6 +540,7 @@ CRYPTO_THREAD_ID CRYPTO_THREAD_get_current_id(void);
 int CRYPTO_THREAD_compare_id(CRYPTO_THREAD_ID a, CRYPTO_THREAD_ID b);
 
 OSSL_LIB_CTX *OSSL_LIB_CTX_new(void);
+OSSL_LIB_CTX *OSSL_LIB_CTX_new_from_dispatch(const OSSL_DISPATCH *in);
 int OSSL_LIB_CTX_load_config(OSSL_LIB_CTX *ctx, const char *config_file);
 void OSSL_LIB_CTX_free(OSSL_LIB_CTX *);
 OSSL_LIB_CTX *OSSL_LIB_CTX_get0_global_default(void);

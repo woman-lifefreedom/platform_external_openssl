@@ -260,6 +260,7 @@ SKM_DEFINE_STACK_OF_INTERNAL(SRTP_PROTECTION_PROFILE, SRTP_PROTECTION_PROFILE, S
 #define sk_SRTP_PROTECTION_PROFILE_set(sk, idx, ptr) ((SRTP_PROTECTION_PROFILE *)OPENSSL_sk_set(ossl_check_SRTP_PROTECTION_PROFILE_sk_type(sk), (idx), ossl_check_SRTP_PROTECTION_PROFILE_type(ptr)))
 #define sk_SRTP_PROTECTION_PROFILE_find(sk, ptr) OPENSSL_sk_find(ossl_check_SRTP_PROTECTION_PROFILE_sk_type(sk), ossl_check_SRTP_PROTECTION_PROFILE_type(ptr))
 #define sk_SRTP_PROTECTION_PROFILE_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_SRTP_PROTECTION_PROFILE_sk_type(sk), ossl_check_SRTP_PROTECTION_PROFILE_type(ptr))
+#define sk_SRTP_PROTECTION_PROFILE_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_SRTP_PROTECTION_PROFILE_sk_type(sk), ossl_check_SRTP_PROTECTION_PROFILE_type(ptr), pnum)
 #define sk_SRTP_PROTECTION_PROFILE_sort(sk) OPENSSL_sk_sort(ossl_check_SRTP_PROTECTION_PROFILE_sk_type(sk))
 #define sk_SRTP_PROTECTION_PROFILE_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_SRTP_PROTECTION_PROFILE_sk_type(sk))
 #define sk_SRTP_PROTECTION_PROFILE_dup(sk) ((STACK_OF(SRTP_PROTECTION_PROFILE) *)OPENSSL_sk_dup(ossl_check_const_SRTP_PROTECTION_PROFILE_sk_type(sk)))
@@ -447,7 +448,6 @@ typedef int (*SSL_async_callback_fn)(SSL *s, void *arg);
  */
 # define SSL_OP_ALL        (SSL_OP_CRYPTOPRO_TLSEXT_BUG|\
                             SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS|\
-                            SSL_OP_LEGACY_SERVER_CONNECT|\
                             SSL_OP_TLSEXT_PADDING|\
                             SSL_OP_SAFARI_ECDHE_ECDSA_BUG)
 
@@ -1019,6 +1019,7 @@ SKM_DEFINE_STACK_OF_INTERNAL(SSL_CIPHER, const SSL_CIPHER, SSL_CIPHER)
 #define sk_SSL_CIPHER_set(sk, idx, ptr) ((const SSL_CIPHER *)OPENSSL_sk_set(ossl_check_SSL_CIPHER_sk_type(sk), (idx), ossl_check_SSL_CIPHER_type(ptr)))
 #define sk_SSL_CIPHER_find(sk, ptr) OPENSSL_sk_find(ossl_check_SSL_CIPHER_sk_type(sk), ossl_check_SSL_CIPHER_type(ptr))
 #define sk_SSL_CIPHER_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_SSL_CIPHER_sk_type(sk), ossl_check_SSL_CIPHER_type(ptr))
+#define sk_SSL_CIPHER_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_SSL_CIPHER_sk_type(sk), ossl_check_SSL_CIPHER_type(ptr), pnum)
 #define sk_SSL_CIPHER_sort(sk) OPENSSL_sk_sort(ossl_check_SSL_CIPHER_sk_type(sk))
 #define sk_SSL_CIPHER_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_SSL_CIPHER_sk_type(sk))
 #define sk_SSL_CIPHER_dup(sk) ((STACK_OF(SSL_CIPHER) *)OPENSSL_sk_dup(ossl_check_const_SSL_CIPHER_sk_type(sk)))
@@ -1044,6 +1045,7 @@ SKM_DEFINE_STACK_OF_INTERNAL(SSL_COMP, SSL_COMP, SSL_COMP)
 #define sk_SSL_COMP_set(sk, idx, ptr) ((SSL_COMP *)OPENSSL_sk_set(ossl_check_SSL_COMP_sk_type(sk), (idx), ossl_check_SSL_COMP_type(ptr)))
 #define sk_SSL_COMP_find(sk, ptr) OPENSSL_sk_find(ossl_check_SSL_COMP_sk_type(sk), ossl_check_SSL_COMP_type(ptr))
 #define sk_SSL_COMP_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_SSL_COMP_sk_type(sk), ossl_check_SSL_COMP_type(ptr))
+#define sk_SSL_COMP_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_SSL_COMP_sk_type(sk), ossl_check_SSL_COMP_type(ptr), pnum)
 #define sk_SSL_COMP_sort(sk) OPENSSL_sk_sort(ossl_check_SSL_COMP_sk_type(sk))
 #define sk_SSL_COMP_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_SSL_COMP_sk_type(sk))
 #define sk_SSL_COMP_dup(sk) ((STACK_OF(SSL_COMP) *)OPENSSL_sk_dup(ossl_check_const_SSL_COMP_sk_type(sk)))
