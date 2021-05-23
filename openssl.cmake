@@ -504,6 +504,7 @@ set(crypto_srcs
         crypto/property/property_err.c
         crypto/property/property_parse.c
         crypto/property/property_string.c
+        crypto/provider_child.c
         crypto/punycode.c
         crypto/rand/prov_seed.c
         crypto/rand/rand_egd.c
@@ -906,12 +907,12 @@ set(provider_srcs
         providers/implementations/rands/seed_src.c
         providers/implementations/rands/seeding/rand_unix.c
         providers/implementations/rands/test_rng.c
-        providers/implementations/signature/dsa.c
-        providers/implementations/signature/ecdsa.c
-        providers/implementations/signature/eddsa.c
-        providers/implementations/signature/mac_legacy.c
-        providers/implementations/signature/rsa.c
-        providers/implementations/signature/sm2sig.c
+        providers/implementations/signature/dsa_sig.c
+        providers/implementations/signature/ecdsa_sig.c
+        providers/implementations/signature/eddsa_sig.c
+        providers/implementations/signature/mac_legacy_sig.c
+        providers/implementations/signature/rsa_sig.c
+	    providers/implementations/signature/sm2_sig.c
         providers/implementations/storemgmt/file_store.c
         providers/implementations/storemgmt/file_store_der2obj.c
         providers/prov_running.c

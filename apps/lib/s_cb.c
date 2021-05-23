@@ -739,10 +739,6 @@ int generate_cookie_callback(SSL *ssl, unsigned char *cookie,
     unsigned short port;
     BIO_ADDR *lpeer = NULL, *peer = NULL;
     int res = 0;
-    EVP_MAC *hmac = NULL;
-    EVP_MAC_CTX *ctx = NULL;
-    OSSL_PARAM params[2], *p = params;
-    size_t mac_len;
 
     /* Initialize a random secret */
     if (!cookie_initialized) {
@@ -780,32 +776,13 @@ int generate_cookie_callback(SSL *ssl, unsigned char *cookie,
     memcpy(buffer, &port, sizeof(port));
     BIO_ADDR_rawaddress(peer, buffer + sizeof(port), NULL);
 
-    /* Calculate HMAC of buffer using the secret */
-    hmac = EVP_MAC_fetch(NULL, "HMAC", NULL);
-    if (hmac == NULL) {
-            BIO_printf(bio_err, "HMAC not found\n");
-            goto end;
+    if (EVP_Q_mac(NULL, "HMAC", NULL, "SHA1", NULL,
+                  cookie_secret, COOKIE_SECRET_LENGTH, buffer, length,
+                  cookie, DTLS1_COOKIE_LENGTH, cookie_len) == NULL) {
+        BIO_printf(bio_err,
+                   "Error calculating HMAC-SHA1 of buffer with secret\n");
+        goto end;
     }
-    ctx = EVP_MAC_CTX_new(hmac);
-    if (ctx == NULL) {
-            BIO_printf(bio_err, "HMAC context allocation failed\n");
-            goto end;
-    }
-    *p++ = OSSL_PARAM_construct_utf8_string(OSSL_MAC_PARAM_DIGEST, "SHA1", 0);
-    *p = OSSL_PARAM_construct_end();
-    if (!EVP_MAC_init(ctx, cookie_secret, COOKIE_SECRET_LENGTH, params)) {
-            BIO_printf(bio_err, "HMAC context initialisation failed\n");
-            goto end;
-    }
-    if (!EVP_MAC_update(ctx, buffer, length)) {
-            BIO_printf(bio_err, "HMAC context update failed\n");
-            goto end;
-    }
-    if (!EVP_MAC_final(ctx, cookie, &mac_len, DTLS1_COOKIE_LENGTH)) {
-            BIO_printf(bio_err, "HMAC context final failed\n");
-            goto end;
-    }
-    *cookie_len = (int)mac_len;
     res = 1;
 end:
     OPENSSL_free(buffer);
@@ -1256,12 +1233,10 @@ int config_ctx(SSL_CONF_CTX *cctx, STACK_OF(OPENSSL_STRING) *str,
     for (i = 0; i < sk_OPENSSL_STRING_num(str); i += 2) {
         const char *flag = sk_OPENSSL_STRING_value(str, i);
         const char *arg = sk_OPENSSL_STRING_value(str, i + 1);
+
         if (SSL_CONF_cmd(cctx, flag, arg) <= 0) {
-            if (arg != NULL)
-                BIO_printf(bio_err, "Error with command: \"%s %s\"\n",
-                           flag, arg);
-            else
-                BIO_printf(bio_err, "Error with command: \"%s\"\n", flag);
+            BIO_printf(bio_err, "Call to SSL_CONF_cmd(%s, %s) failed\n",
+                       flag, arg == NULL ? "<NULL>" : arg);
             ERR_print_errors(bio_err);
             return 0;
         }
