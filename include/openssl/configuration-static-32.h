@@ -126,9 +126,6 @@ extern "C" {
 # ifndef OPENSSL_NO_SEED
 #  define OPENSSL_NO_SEED
 # endif
-# ifndef OPENSSL_NO_SSL_TRACE
-#  define OPENSSL_NO_SSL_TRACE
-# endif
 # ifndef OPENSSL_NO_SSL3
 #  define OPENSSL_NO_SSL3
 # endif

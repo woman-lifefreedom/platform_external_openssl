@@ -33,11 +33,11 @@ set(crypto_srcs
         crypto/asn1/asn1_err.c
         crypto/asn1/asn1_gen.c
         crypto/asn1/asn1_lib.c
-        crypto/asn1/asn1_par.c
         crypto/asn1/asn_mime.c
         crypto/asn1/asn_moid.c
         crypto/asn1/asn_mstbl.c
         crypto/asn1/asn_pack.c
+        crypto/asn1/asn1_parse.c
         crypto/asn1/bio_asn1.c
         crypto/asn1/bio_ndef.c
         crypto/asn1/d2i_param.c
@@ -77,21 +77,24 @@ set(crypto_srcs
         crypto/async/async.c
         crypto/async/async_err.c
         crypto/async/async_wait.c
+
         crypto/bf/bf_cfb64.c
         crypto/bf/bf_ecb.c
         crypto/bf/bf_enc.c
         crypto/bf/bf_ofb64.c
         crypto/bf/bf_skey.c
-        crypto/bio/b_addr.c
-        crypto/bio/b_dump.c
-        crypto/bio/b_print.c
-        crypto/bio/b_sock.c
-        crypto/bio/b_sock2.c
+
         crypto/bio/bf_buff.c
         crypto/bio/bf_nbio.c
         crypto/bio/bf_null.c
         crypto/bio/bf_prefix.c
         crypto/bio/bf_readbuff.c
+        crypto/bio/bio_addr.c
+        crypto/bio/bio_dump.c
+        crypto/bio/bio_print.c
+        crypto/bio/bio_sock.c
+        crypto/bio/bio_sock2.c
+        crypto/bio/ossl_core_bio.c
         crypto/bio/bio_cb.c
         crypto/bio/bio_err.c
         crypto/bio/bio_lib.c
@@ -107,7 +110,6 @@ set(crypto_srcs
         crypto/bio/bss_mem.c
         crypto/bio/bss_null.c
         crypto/bio/bss_sock.c
-        crypto/bio/core_bio.c
         crypto/bn/bn_add.c
         crypto/bn/bn_asm.c
         crypto/bn/bn_blind.c
@@ -503,6 +505,7 @@ set(crypto_srcs
         crypto/property/property.c
         crypto/property/property_err.c
         crypto/property/property_parse.c
+        crypto/property/property_query.c
         crypto/property/property_string.c
         crypto/provider_child.c
         crypto/punycode.c
@@ -600,7 +603,7 @@ set(crypto_srcs
         crypto/x509/x509_r2x.c
         crypto/x509/x509_req.c
         crypto/x509/x509_set.c
-        crypto/x509/x509_trs.c
+        crypto/x509/x509_trust.c
         crypto/x509/x509_txt.c
         crypto/x509/x509_v3.c
         crypto/x509/x509_vfy.c
@@ -861,6 +864,8 @@ set(provider_srcs
         providers/implementations/digests/sha3_prov.c
         providers/implementations/digests/md4_prov.c
         providers/implementations/encode_decode/decode_der2key.c
+        providers/implementations/encode_decode/decode_epki2pki.c
+        providers/implementations/encode_decode/decode_spki2typespki.c
         providers/implementations/encode_decode/encode_key2any.c
         providers/implementations/encode_decode/encode_key2blob.c
         providers/implementations/encode_decode/encode_key2ms.c
