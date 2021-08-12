@@ -919,7 +919,7 @@ set(provider_srcs
         providers/implementations/signature/rsa_sig.c
 	    providers/implementations/signature/sm2_sig.c
         providers/implementations/storemgmt/file_store.c
-        providers/implementations/storemgmt/file_store_der2obj.c
+        providers/implementations/storemgmt/file_store_any2obj.c
         providers/prov_running.c
         )
 
