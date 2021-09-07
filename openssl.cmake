@@ -818,11 +818,11 @@ set(provider_srcs
         providers/implementations/ciphers/cipher_tdes_common.c
         providers/implementations/ciphers/cipher_aes_ccm.c
         providers/implementations/ciphers/cipher_sm4.c
+        providers/implementations/ciphers/cipher_aes_hw.c
         providers/implementations/ciphers/cipher_aes_ocb_hw.c
+        providers/implementations/ciphers/cipher_cts.c
         providers/implementations/ciphers/cipher_des_hw.c
         providers/implementations/ciphers/cipher_null.c
-        providers/implementations/ciphers/cipher_aes_cts.c
-        providers/implementations/ciphers/cipher_aes_hw.c
         providers/implementations/ciphers/cipher_rc2_hw.c
         providers/implementations/ciphers/cipher_chacha20_poly1305_hw.c
         providers/implementations/ciphers/cipher_tdes.c
