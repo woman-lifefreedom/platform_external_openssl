@@ -923,7 +923,15 @@ set(provider_srcs
         providers/prov_running.c
         )
 
-PREPEND(crypto_srcs_with_path ${OPENSSL_PATH} ${provider_srcs} ${crypto_srcs})
+set(legacy_srcs
+        providers/legacyprov.c
+        providers/implementations/ciphers/cipher_rc4_hmac_md5_hw.c
+        providers/implementations/ciphers/cipher_rc4_hmac_md5.c
+        providers/implementations/ciphers/cipher_rc4.c
+        providers/implementations/kdfs/pbkdf1.c
+)
+
+PREPEND(crypto_srcs_with_path ${OPENSSL_PATH} ${provider_srcs} ${legacy_srcs} ${crypto_srcs})
 add_library(crypto ${SSLLIBTYPE} ${crypto_srcs_with_path})
 
 target_include_directories(crypto PUBLIC
@@ -955,6 +963,7 @@ target_compile_options(crypto PRIVATE -Wno-missing-field-initializers -Wno-unuse
         -DOPENSSL_THREADS
         -DOPENSSL_CPUID_OBJ
         -DL_ENDIAN
+        -DSTATIC_LEGACY
         )
 
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a")
