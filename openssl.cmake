@@ -853,16 +853,17 @@ set(provider_srcs
         providers/implementations/ciphers/cipher_aes_gcm_hw.c
         providers/implementations/ciphers/cipher_tdes_hw.c
         providers/implementations/ciphers/cipher_aes_xts_fips.c
-        providers/implementations/digests/sha2_prov.c
-        providers/implementations/digests/sm3_prov.c
-        providers/implementations/digests/md5_sha1_prov.c
-        providers/implementations/digests/digestcommon.c
         providers/implementations/digests/blake2_prov.c
-        providers/implementations/digests/md5_prov.c
         providers/implementations/digests/blake2s_prov.c
         providers/implementations/digests/blake2b_prov.c
-        providers/implementations/digests/sha3_prov.c
+        providers/implementations/digests/digestcommon.c
         providers/implementations/digests/md4_prov.c
+        providers/implementations/digests/md5_prov.c
+        providers/implementations/digests/md5_sha1_prov.c
+        providers/implementations/digests/null_prov.c
+        providers/implementations/digests/sha2_prov.c
+        providers/implementations/digests/sha3_prov.c
+        providers/implementations/digests/sm3_prov.c
         providers/implementations/encode_decode/decode_der2key.c
         providers/implementations/encode_decode/decode_epki2pki.c
         providers/implementations/encode_decode/decode_spki2typespki.c
