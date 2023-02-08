@@ -143,6 +143,7 @@ set(crypto_srcs
         crypto/bn/bn_word.c
         crypto/bn/bn_x931p.c
         crypto/bn/rsaz_exp.c
+        crypto/bn/rsa_sup_mul.c
         crypto/bsearch.c
         crypto/buffer/buf_err.c
         crypto/buffer/buffer.c
