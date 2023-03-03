@@ -455,6 +455,7 @@ set(crypto_srcs
         crypto/ocsp/ocsp_prn.c
         crypto/ocsp/ocsp_srv.c
         crypto/ocsp/ocsp_vfy.c
+        crypto/ocsp/ocsp_http.c
         crypto/ocsp/v3_ocsp.c
         crypto/packet.c
         crypto/params.c
